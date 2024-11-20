@@ -20,9 +20,7 @@ class PaymentRequest extends Model
         'invoice_details',
         'budget_line',
         'followed_by_id',
-        'quality_id',
-        'phone',
-        'email',
+        'quality', // Mis à jour de 'quality_id' à 'quality'
     ];
 
     protected $casts = [
@@ -40,13 +38,15 @@ class PaymentRequest extends Model
         return $this->belongsTo(User::class, 'followed_by_id');
     }
 
-    public function quality()
-    {
-        return $this->belongsTo(User::class, 'quality_id');
-    }
+    // Supprimé la relation 'quality' car 'quality' est un champ simple
+    // public function quality()
+    // {
+    //     return $this->belongsTo(User::class, 'quality_id');
+    // }
 
     public function recapForms()
     {
         return $this->hasMany(RecapForm::class);
     }
 }
+ 

@@ -22,4 +22,9 @@ class Attachment extends Model
     {
         return $this->belongsTo(RecapForm::class);
     }
+
+    public function getUrlAttribute()
+    {
+        return asset('storage/' . $this->file_path);
+    }
 }
