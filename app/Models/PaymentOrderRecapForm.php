@@ -25,7 +25,7 @@ class PaymentOrderRecapForm extends Model
         return $this->belongsTo(PaymentOrder::class);
     }
 
-    public function paymentOrderAttachments()
+    public function attachments()
     {
         return $this->hasMany(PaymentOrderAttachment::class);
     }

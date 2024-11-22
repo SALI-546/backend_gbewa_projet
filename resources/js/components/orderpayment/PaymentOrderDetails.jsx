@@ -1,10 +1,14 @@
 // PaymentOrderDetails.jsx
 
-import React, { useState } from 'react';
-import { FaChevronLeft } from 'react-icons/fa'; // Icône pour retour
+import React, { useState, useEffect } from 'react';
+import { FaChevronLeft } from 'react-icons/fa'; 
 
 const PaymentOrderDetails = ({ isVisible, order, onClose }) => {
     if (!isVisible || !order) return null;
+
+    useEffect(() => {
+        console.log('Détails de l\'ordre dans PaymentOrderDetails:', order);
+    }, [order]);
 
     // État pour les signatures
     const [signatures, setSignatures] = useState({
@@ -15,19 +19,27 @@ const PaymentOrderDetails = ({ isVisible, order, onClose }) => {
 
     // Fonction pour gérer le changement de signature
     const handleSignatureChange = (role) => {
-        setSignatures({
-            ...signatures,
+        setSignatures((prevSignatures) => ({
+            ...prevSignatures,
             [role]: {
-                ...signatures[role],
-                signed: !signatures[role].signed,
-                date: !signatures[role].signed ? new Date().toISOString().slice(0, 10) : '',
+                ...prevSignatures[role],
+                signed: !prevSignatures[role].signed,
+                date: !prevSignatures[role].signed ? new Date().toISOString().slice(0, 10) : '',
             },
-        });
+        }));
     };
+
+   
+    const recapForms = Array.isArray(order.recapForms) ? order.recapForms : [];
+
+    // Calcul des totaux
+    const totalDemande = recapForms.reduce((acc, form) => acc + Number(form.montant || 0), 0);
+    const totalRappel = recapForms.reduce((acc, form) => acc + Number(form.montant || 0), 0);
+    const totalGeneral = totalDemande; 
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg p-6 w-4/5 max-w-5xl">
+            <div className="bg-white rounded-lg p-6 w-4/5 max-w-5xl overflow-auto max-h-screen">
                 <div className="flex justify-between items-center mb-4">
                     {/* Bouton retour */}
                     <button onClick={onClose} className="flex items-center text-gray-600 hover:text-black">
@@ -39,19 +51,19 @@ const PaymentOrderDetails = ({ isVisible, order, onClose }) => {
                 <div className="mb-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <p><strong>Date et heure:</strong> 09/10/2024 00:00</p>
+                            <p><strong>Date et heure:</strong> {new Date(order.createdAt).toLocaleString()}</p>
                             <p><strong>N° d'Ordre:</strong> {order.orderNumber}</p>
-                            <p><strong>COMPTE:</strong> ONG GBEWA PIB SWEDD</p>
-                            <p><strong>INTITULE:</strong> 003712170137</p>
+                            <p><strong>COMPTE:</strong> {order.account}</p>
+                            <p><strong>INTITULE:</strong> {order.title}</p>
                         </div>
                         <div>
-                            <p><strong>N° Facture:</strong> EM100234-23 du 12/10/2024</p>
-                            <p><strong>N° BL:</strong> 106/MOOV/24</p>
+                            <p><strong>N° Facture:</strong> {order.invoiceNumber}</p>
+                            <p><strong>N° BL:</strong> {order.billOfLadingNumber}</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Tableau détaillé */}
+                {/* Tableau détaillé des formulaires récapitulatifs */}
                 <table className="min-w-full bg-white border border-gray-300 rounded-lg">
                     <thead>
                         <tr>
@@ -64,67 +76,67 @@ const PaymentOrderDetails = ({ isVisible, order, onClose }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr className="text-center border-t border-gray-300">
-                            <td className="py-2 px-4 border border-gray-300">01</td>
-                            <td className="py-2 px-4 border border-gray-300">Facture EM100234-23 du 12/10/2024</td>
-                            <td className="py-2 px-4 border border-gray-300">250 000</td>
-                            <td className="py-2 px-4 border border-gray-300">Dotation en communication staff projet, Octobre 2024</td>
-                            <td className="py-2 px-4 border border-gray-300">250 000</td>
-                            <td className="py-2 px-4 border border-gray-300">Bon de commande, Facture</td>
-                        </tr>
-                        {/* Lignes vides pour la mise en page */}
-                        <tr className="text-center border-t border-gray-300">
-                            <td className="py-2 px-4 border border-gray-300">02</td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                        </tr>
-                        <tr className="text-center border-t border-gray-300">
-                            <td className="py-2 px-4 border border-gray-300">03</td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                        </tr>
-                        <tr className="text-center border-t border-gray-300">
-                            <td className="py-2 px-4 border border-gray-300">04</td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                            <td className="py-2 px-4 border border-gray-300"></td>
-                        </tr>
-                        {/* Lignes pour les Totaux uniquement sous "Sommes nettes revenant aux bénéficiaires" */}
+                        {recapForms.length > 0 ? (
+                            recapForms.map((form, index) => (
+                                <tr key={form.id || index} className="text-center border-t border-gray-300 hover:bg-gray-50">
+                                    <td className="py-2 px-4 border border-gray-300">{(index + 1).toString().padStart(2, '0')}</td>
+                                    <td className="py-2 px-4 border border-gray-300">{form.beneficiaire}</td>
+                                    <td className="py-2 px-4 border border-gray-300">{Number(form.montant).toLocaleString()} FCFA</td>
+                                    <td className="py-2 px-4 border border-gray-300">{form.objetDepense}</td>
+                                    <td className="py-2 px-4 border border-gray-300">{form.ligneBudgetaire}</td>
+                                    <td className="py-2 px-4 border border-gray-300">
+                                        {form.piecesJointes && form.piecesJointes.length > 0 ? (
+                                            form.piecesJointes.map((piece, idx) => (
+                                                <a 
+                                                    href={piece.url} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer" 
+                                                    key={idx} 
+                                                    className="text-blue-500 hover:underline"
+                                                >
+                                                    {piece.fileName}{idx < form.piecesJointes.length - 1 ? ', ' : ''}
+                                                </a>
+                                            ))
+                                        ) : (
+                                            'Aucune pièce jointe'
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr className="text-center border-t border-gray-300">
+                                <td colSpan="6" className="py-4 px-4 text-gray-500">Aucun formulaire récapitulatif trouvé.</td>
+                            </tr>
+                        )}
+
+                        {/* Totaux */}
                         <tr className="text-center font-bold">
-                            <td colSpan="2" className="py-2 px-4 text-left border-none">TOTAL DEMANDE:</td>
-                            <td className="py-2 px-4 border border-gray-300 border-l-2 border-r-2">415 360 FCFA</td>
-                            <td className="py-2 px-4 border-none"></td>
-                            <td className="py-2 px-4 border-none"></td>
-                            <td className="py-2 px-4 border-none"></td>
-                        </tr>
-                        <tr className="text-center font-bold">
-                            <td colSpan="2" className="py-2 px-4 text-left border-none">RAPPEL DES ORDRES ANTERIEURS:</td>
-                            <td className="py-2 px-4 border border-gray-300 border-l-2 border-r-2">415 360 FCFA</td>
-                            <td className="py-2 px-4 border-none"></td>
-                            <td className="py-2 px-4 border-none"></td>
-                            <td className="py-2 px-4 border-none"></td>
+                            <td colSpan="2" className="py-2 px-4 text-left">TOTAL DEMANDE:</td>
+                            <td className="py-2 px-4 border border-gray-300">{totalDemande.toLocaleString()} FCFA</td>
+                            <td className="py-2 px-4"></td>
+                            <td className="py-2 px-4"></td>
+                            <td className="py-2 px-4"></td>
                         </tr>
                         <tr className="text-center font-bold">
-                            <td colSpan="2" className="py-2 px-4 text-left border-none">TOTAL GENERAL:</td>
-                            <td className="py-2 px-4 border border-gray-300 border-l-2 border-r-2">415 360 FCFA</td>
-                            <td className="py-2 px-4 border-none"></td>
-                            <td className="py-2 px-4 border-none"></td>
-                            <td className="py-2 px-4 border-none"></td>
+                            <td colSpan="2" className="py-2 px-4 text-left">RAPPEL DES ORDRES ANTERIEURS:</td>
+                            <td className="py-2 px-4 border border-gray-300">{totalRappel.toLocaleString()} FCFA</td>
+                            <td className="py-2 px-4"></td>
+                            <td className="py-2 px-4"></td>
+                            <td className="py-2 px-4"></td>
+                        </tr>
+                        <tr className="text-center font-bold">
+                            <td colSpan="2" className="py-2 px-4 text-left">TOTAL GENERAL:</td>
+                            <td className="py-2 px-4 border border-gray-300">{totalGeneral.toLocaleString()} FCFA</td>
+                            <td className="py-2 px-4"></td>
+                            <td className="py-2 px-4"></td>
+                            <td className="py-2 px-4"></td>
                         </tr>
                     </tbody>
                 </table>
 
                 {/* Note de bas de page */}
                 <p className="mt-6 text-center">
-                    Arrêté le présent état des ordres de paiement à la somme totale de deux cent cinquante mille francs CFA.
+                    Arrêté le présent état des ordres de paiement à la somme totale de {totalGeneral.toLocaleString()} francs CFA.
                 </p>
 
                 {/* Signatures */}
@@ -192,7 +204,6 @@ const PaymentOrderDetails = ({ isVisible, order, onClose }) => {
 
             </div>
         </div>
-    );
-};
-
+    ); 
+}
 export default PaymentOrderDetails;

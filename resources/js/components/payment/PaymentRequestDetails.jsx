@@ -1,25 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaChevronLeft, FaEdit, FaSave } from 'react-icons/fa';
 import PaymentRequestForm from './PaymentRequestForm'; // Importer le formulaire
+import axios from 'axios';
 
-const PaymentRequestDetails = ({ request, onClose }) => {
-    const [isEditing, setIsEditing] = useState(false); // État pour gérer l'affichage du formulaire de modification
+const PaymentRequestDetails = ({ requestId, onClose }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [recapForms, setRecapForms] = useState([]);
+    const [paymentRequest, setPaymentRequest] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Fonction pour afficher le formulaire de modification
+    useEffect(() => {
+        const fetchPaymentRequest = async () => {
+            try {
+                const response = await axios.get(`/api/payment-requests/${requestId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        
+                    }
+                });
+                console.log('Réponse API pour PaymentRequestDetails:', response.data);
+                setPaymentRequest(response.data);
+                if (response.data.recap_forms && response.data.recap_forms.length > 0) {
+                    setRecapForms(response.data.recap_forms);
+                } else {
+                    setRecapForms([]);
+                }
+            } catch (err) {
+                setError(err);
+                console.error('Erreur lors de la récupération des détails de la demande de paiement:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (requestId) {
+            fetchPaymentRequest();
+        }
+    }, [requestId]);
+
+   
     const handleEditClick = () => {
         setIsEditing(true);
     };
 
-    // Fonction pour fermer le formulaire de modification et revenir aux détails
-    const handleCloseForm = () => {
+    
+    const handleCloseForm = async () => {
         setIsEditing(false);
+        setLoading(true);
+        try {
+            const response = await axios.get(`/api/payment-requests/${requestId}`, {
+                headers: {
+                    'Accept': 'application/json',
+                   
+                }
+            });
+            console.log('Réponse API pour PaymentRequestDetails après édition:', response.data);
+            setPaymentRequest(response.data);
+            if (response.data.recap_forms && response.data.recap_forms.length > 0) {
+                setRecapForms(response.data.recap_forms);
+            } else {
+                setRecapForms([]);
+            }
+        } catch (err) {
+            setError(err);
+            console.error('Erreur lors de la récupération des détails de la demande de paiement après édition:', err);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    if (loading) return <p>Chargement...</p>;
+    if (error) return <p>Erreur: {error.message}</p>;
+    if (!paymentRequest) return <p>Aucune donnée disponible.</p>;
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-lg">
             {/* Affichage du formulaire si en mode édition */}
             {isEditing ? (
-                <PaymentRequestForm onClose={handleCloseForm} editData={request} />
+                <PaymentRequestForm onClose={handleCloseForm} editData={paymentRequest} />
             ) : (
                 <>
                     {/* Bouton de retour avec icône */}
@@ -27,7 +86,8 @@ const PaymentRequestDetails = ({ request, onClose }) => {
                         <FaChevronLeft size={20} />
                     </button>
                     
-                    <h1 className="text-3xl font-bold mb-6">{request.projet}</h1>
+                    {/* Titre avec le nom du projet */}
+                    <h1 className="text-3xl font-bold mb-6">{paymentRequest.project?.name}</h1>
 
                     {/* Section d'information - Deux colonnes */}
                     <div className="grid grid-cols-2 gap-4 mb-6">
@@ -37,37 +97,35 @@ const PaymentRequestDetails = ({ request, onClose }) => {
                                 <p><strong>N° d'Ordre :</strong></p>
                                 <p><strong>Intitulé de l'opération :</strong></p>
                                 <p><strong>Bénéficiaire :</strong></p>
-                                <p><strong>Numéro et date :</strong></p>
+                                <p><strong>Détails de la Facture :</strong></p>
                                 <p><strong>Objet/Activité :</strong></p>
                             </div>
                             <div className="w-1/2">
-                                <p>{request.date}</p>
-                                <p>{request.orderNumber}</p>
-                                <p>{request.operation}</p>
-                                <p>{request.beneficiary}</p>
-                                <p>{request.invoice}</p>
-                                <p>Dotation en communication staff projet, Octobre 2024</p>
+                                <p>{new Date(paymentRequest.date).toLocaleString()}</p>
+                                <p>{paymentRequest.order_number}</p>
+                                <p>{paymentRequest.operation}</p>
+                                <p>{paymentRequest.beneficiary}</p>
+                                <p>{paymentRequest.invoice_details}</p>
+                                <p>{paymentRequest.activite || paymentRequest.budget_line}</p> 
                             </div>
                         </div>
                         <div className="flex">
                             <div className="w-1/2">
-                                <p><strong>Ligne Budgétaire :</strong></p>
                                 <p><strong>Affaire suivie par :</strong></p>
                                 <p><strong>Qualité :</strong></p>
-                                <p><strong>Tél. :</strong></p>
+                              
                                 <p><strong>Mail :</strong></p>
                             </div>
                             <div className="w-1/2">
-                                <p>{request.budgetLine}</p>
-                                <p>{request.quality}</p>
-                                <p>{request.quality}</p>
-                                <p>{request.phone}</p>
-                                <p>{request.email}</p>
+                            <p>{paymentRequest.followed_by?.name}</p>
+                                <p>{paymentRequest.quality}</p>
+                                <p>{paymentRequest.followed_by?.email || '-'}</p> {/* Accès correct à l'email */}
                             </div>
                         </div>
                     </div>
 
-                    {/* Tableau des montants */}
+                    {/* Tableau des montants récapitulatifs */}
+                    <h3 className="text-lg font-semibold mb-2">Formulaires Récapitulatif</h3>
                     <table className="min-w-full bg-white rounded-lg shadow-lg border border-gray-300 mb-6">
                         <thead>
                             <tr>
@@ -80,58 +138,73 @@ const PaymentRequestDetails = ({ request, onClose }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr className="text-center border-t border-gray-300 hover:bg-gray-50">
-                                <td className="py-2 px-4 border border-gray-300">01</td>
-                                <td className="py-2 px-4 border border-gray-300">{request.invoice}</td>
-                                <td className="py-2 px-4 border border-gray-300">250 000</td>
-                                <td className="py-2 px-4 border border-gray-300">250 000</td>
-                                <td className="py-2 px-4 border border-gray-300">250 000</td>
-                                <td className="py-2 px-4 border border-gray-300">Bon de commande, Facture</td>
-                            </tr>
-                            <tr className="text-center border-t border-gray-300 hover:bg-gray-50">
-                                <td className="py-2 px-4 border border-gray-300">02</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                            </tr>
-                            <tr className="text-center border-t border-gray-300 hover:bg-gray-50">
-                                <td className="py-2 px-4 border border-gray-300">03</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                            </tr>
-                            <tr className="text-center border-t border-gray-300 hover:bg-gray-50">
-                                <td className="py-2 px-4 border border-gray-300">04</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                                <td className="py-2 px-4 border border-gray-300">-</td>
-                            </tr>
-                            <tr className="text-center border-t border-gray-300 hover:bg-gray-50 font-bold">
-                                <td className="py-2 px-4 border border-gray-300" colSpan="2">TOTAL DEMANDE</td>
-                                <td className="py-2 px-4 border border-gray-300">250 000 FCFA</td>
-                                <td className="py-2 px-4 border border-gray-300">250 000 FCFA</td>
-                                <td className="py-2 px-4 border border-gray-300">250 000 FCFA</td>
-                                <td className="py-2 px-4 border border-gray-300"></td>
-                            </tr>
+                            {recapForms.length > 0 ? (
+                                recapForms.map((form, index) => (
+                                    <tr key={form.id || index} className="text-center border-t border-gray-300 hover:bg-gray-50">
+                                        <td className="py-2 px-4 border border-gray-300">{String(index + 1).padStart(2, '0')}</td>
+                                        <td className="py-2 px-4 border border-gray-300">{form.activite}</td>
+                                        <td className="py-2 px-4 border border-gray-300">{Number(form.montant_presente_total).toLocaleString('fr-FR')} FCFA</td>
+                                        <td className="py-2 px-4 border border-gray-300">{Number(form.montant_presente_eligible).toLocaleString('fr-FR')} FCFA</td>
+                                        <td className="py-2 px-4 border border-gray-300">{Number(form.montant_sollicite).toLocaleString('fr-FR')} FCFA</td>
+                                        <td className="py-2 px-4 border border-gray-300">
+                                            {form.attachments && form.attachments.length > 0 ? (
+                                                <ul className="list-disc list-inside">
+                                                    {form.attachments.map((file) => (
+                                                        <li key={file.id}>
+                                                            <a
+                                                                href={file.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-500 hover:underline"
+                                                            >
+                                                                {file.file_name}
+                                                            </a>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                '-'
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" className="py-4 px-4 text-center text-gray-500">
+                                        Aucun formulaire récapitulatif disponible.
+                                    </td>
+                                </tr>
+                            )}
+                            {/* Ligne de total */}
+                            {recapForms.length > 0 && (
+                                <tr className="text-center border-t border-gray-300 hover:bg-gray-50 font-bold">
+                                    <td className="py-2 px-4 border border-gray-300" colSpan="2">TOTAL DEMANDE</td>
+                                    <td className="py-2 px-4 border border-gray-300">
+                                        {recapForms.reduce((acc, form) => acc + Number(form.montant_presente_total || 0), 0).toLocaleString('fr-FR')} FCFA
+                                    </td>
+                                    <td className="py-2 px-4 border border-gray-300">
+                                        {recapForms.reduce((acc, form) => acc + Number(form.montant_presente_eligible || 0), 0).toLocaleString('fr-FR')} FCFA
+                                    </td>
+                                    <td className="py-2 px-4 border border-gray-300">
+                                        {recapForms.reduce((acc, form) => acc + Number(form.montant_sollicite || 0), 0).toLocaleString('fr-FR')} FCFA
+                                    </td>
+                                    <td className="py-2 px-4 border border-gray-300"></td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
 
                     {/* Texte final */}
                     <p className="mt-4 text-gray-600">
-                        Arrêté la présente demande de paiement à la somme totale de deux cent cinquante mille francs CFA.
+                        Arrêté la présente demande de paiement à la somme totale de{' '}
+                        {recapForms.reduce((acc, form) => acc + Number(form.montant_sollicite || 0), 0).toLocaleString('fr-FR')} FCFA.
                         Je certifie exactes les informations mentionnées dans la présente demande de paiement.
                     </p>
 
                     {/* Informations supplémentaires et boutons */}
                     <div className="mt-6">
                         <p className="text-gray-600 mb-2">Le chargé de Logistique</p>
-                        <p className=" text-gray-600">SINSIN Daniel</p>
+                        <p className="text-gray-600">{paymentRequest.followed_by?.name}</p>
                         <div className="flex justify-end space-x-4 mt-4">
                             <button
                                 type="button"
@@ -152,6 +225,7 @@ const PaymentRequestDetails = ({ request, onClose }) => {
             )}
         </div>
     );
+
 };
 
 export default PaymentRequestDetails;
