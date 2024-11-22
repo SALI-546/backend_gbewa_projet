@@ -11,12 +11,42 @@ use Illuminate\Support\Str;
 class PaymentRequestController extends Controller
 {
     /**
-     * Affiche toutes les demandes de paiement.
+     * Affiche toutes les demandes de paiement avec possibilité de filtrage.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Inclure les relations si nécessaire
-        $paymentRequests = PaymentRequest::with(['project', 'followedBy'])->get();
+        // Initialiser la requête avec les relations nécessaires
+        $query = PaymentRequest::with(['project', 'followedBy', 'recapForms.attachments']);
+
+        // Filtrer par project_id si fourni
+        if ($request->has('project_id') && !empty($request->project_id)) {
+            $query->where('project_id', $request->project_id);
+        }
+
+        // Filtrer par start_date si fourni
+        if ($request->has('start_date') && !empty($request->start_date)) {
+            $query->whereDate('date', '>=', $request->start_date);
+        }
+
+        // Filtrer par end_date si fourni
+        if ($request->has('end_date') && !empty($request->end_date)) {
+            $query->whereDate('date', '<=', $request->end_date);
+        }
+
+        // Exécuter la requête
+        $paymentRequests = $query->get();
+
+        // Ajouter une URL pour chaque attachment
+        foreach ($paymentRequests as $paymentRequest) {
+            foreach ($paymentRequest->recapForms as $recapForm) {
+                foreach ($recapForm->attachments as $attachment) {
+                    $attachment->url = asset('storage/' . $attachment->file_path);
+                }
+            }
+        }
+
+        Log::info("PaymentRequestController@index - Nombre de demandes récupérées: " . $paymentRequests->count());
+
         return response()->json($paymentRequests);
     }
 

@@ -23,6 +23,10 @@ const PaymentRequestList = () => {
     // État pour déclencher le rafraîchissement des données
     const [refresh, setRefresh] = useState(false);
 
+    // États pour le chargement et les erreurs
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
     // Récupérer les projets depuis l'API lors du montage du composant
     useEffect(() => {
         const fetchProjects = async () => {
@@ -30,12 +34,12 @@ const PaymentRequestList = () => {
                 const response = await axios.get('/api/projects');
                 const data = response.data;
 
-                // Vérifiez le champ exact renvoyé par l'API (name ou title)
+                
                 const options = [
-                    { value: '', label: 'Tous les projets' }, // Option pour afficher tous les projets
+                    { value: '', label: 'Tous les projets' }, 
                     ...data.map((project) => ({
                         value: project.id,
-                        label: project.name || project.title, // Adapter selon la réponse de l'API
+                        label: project.name || project.title, 
                     })),
                 ];
                 setProjects(options);
@@ -47,9 +51,11 @@ const PaymentRequestList = () => {
         fetchProjects();
     }, []);
 
-    // Récupérer les demandes de paiement selon les filtres (projet, dates)
+  
     useEffect(() => {
         const fetchPaymentRequests = async () => {
+            setLoading(true);
+            setError(null);
             try {
                 const projectId = selectedProject ? selectedProject.value : '';
                 const params = {};
@@ -58,13 +64,18 @@ const PaymentRequestList = () => {
                 if (startDate) params.start_date = startDate;
                 if (endDate) params.end_date = endDate;
 
+                console.log('Paramètres de filtre envoyés à l\'API :', params); // Log pour débogage
+
                 const response = await axios.get('/api/payment-requests', { params });
                 const data = response.data;
 
-                console.log('PaymentRequests récupérés:', data); // Log pour débogage
+                console.log('PaymentRequests récupérés depuis l\'API :', data); // Log pour débogage
                 setPaymentRequests(data);
             } catch (error) {
                 console.error('Erreur lors de la récupération des demandes de paiement :', error);
+                setError('Impossible de récupérer les demandes de paiement.');
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -73,7 +84,7 @@ const PaymentRequestList = () => {
 
     // Fonction pour ouvrir le formulaire de création
     const handleAddClick = () => {
-        setSelectedRequestId(null); // Aucune demande sélectionnée pour la création
+        setSelectedRequestId(null); 
         setShowForm(true);
     };
 
@@ -97,7 +108,7 @@ const PaymentRequestList = () => {
                 const response = await axios.delete(`/api/payment-requests/${request.id}`);
                 if (response.status === 200 || response.status === 204) {
                     alert('Demande de paiement supprimée avec succès.');
-                    setRefresh(!refresh); // Rafraîchir la liste après suppression
+                    setRefresh(!refresh); 
                 } else {
                     throw new Error('Erreur lors de la suppression');
                 }
@@ -108,13 +119,13 @@ const PaymentRequestList = () => {
         }
     };
 
-    // Fonction pour fermer le formulaire et rafraîchir la liste si nécessaire
+   
     const closeForm = () => {
         setShowForm(false);
-        setRefresh(!refresh); // Rafraîchir la liste après la fermeture du formulaire
+        setRefresh(!refresh); 
     };
 
-    // Fonction pour fermer les détails
+  
     const closeDetails = () => {
         setShowDetails(false);
         setSelectedRequestId(null);
@@ -122,7 +133,7 @@ const PaymentRequestList = () => {
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-lg">
-            {/* Formulaire ou détails visibles selon l'état */}
+           
             {!showDetails && (
                 <>
                     {/* Section des filtres et bouton d'ajout */}
@@ -195,20 +206,24 @@ const PaymentRequestList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {paymentRequests.length > 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="3" className="py-4 px-4 text-center text-gray-500">Chargement des demandes de paiement...</td>
+                                </tr>
+                            ) : paymentRequests.length > 0 ? (
                                 paymentRequests.map((request) => (
                                     <tr key={request.id} className="text-center border-t border-gray-300 hover:bg-gray-50">
-                                        {/* Affichage du nom du projet */}
+                                      
                                         <td className="py-2 px-4 border border-gray-300 text-gray-800">
                                             {request.project.name || request.project.title}
                                         </td>
-                                        {/* Affichage du numéro d'ordre */}
+                                       
                                         <td className="py-2 px-4 border border-gray-300 text-gray-800">
                                             {request.order_number}
                                         </td>
-                                        {/* Actions: visualiser, modifier, supprimer */}
+                                       
                                         <td className="py-2 px-4 border border-gray-300 flex justify-center space-x-4">
-                                            {/* Bouton pour visualiser les détails */}
+                                         
                                             <button
                                                 onClick={() => handleViewClick(request.id)}
                                                 className="text-gray-600 hover:text-black focus:outline-none"
@@ -216,7 +231,7 @@ const PaymentRequestList = () => {
                                             >
                                                 <FaEye size={18} />
                                             </button>
-                                            {/* Bouton pour modifier la demande */}
+                                           
                                             <button
                                                 onClick={() => handleEditClick(request)}
                                                 className="text-gray-600 hover:text-black focus:outline-none"
@@ -224,7 +239,7 @@ const PaymentRequestList = () => {
                                             >
                                                 <FaEdit size={18} />
                                             </button>
-                                            {/* Bouton pour supprimer la demande */}
+                                         
                                             <button
                                                 onClick={() => handleDeleteClick(request)}
                                                 className="text-red-600 hover:text-red-800 focus:outline-none"
@@ -236,18 +251,24 @@ const PaymentRequestList = () => {
                                     </tr>
                                 ))
                             ) : (
-                                // Message lorsque aucune demande n'est trouvée
+                                
                                 <tr>
                                     <td colSpan="3" className="py-4 px-4 text-center text-gray-500">Aucune demande de paiement trouvée.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
-                </>
 
+                  
+                    {error && (
+                        <div className="mt-4 text-red-600">
+                            {error}
+                        </div>
+                    )}
+                </>
             )}
 
-            {/* Affichage des détails de la demande de paiement */}
+           
             {showDetails && selectedRequestId && (
                 <PaymentRequestDetails requestId={selectedRequestId} onClose={closeDetails} />
             )}

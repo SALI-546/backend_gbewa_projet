@@ -18,8 +18,13 @@ class PaymentOrderAttachment extends Model
     ];
 
     // Relations
-    public function paymentOrderRecapForm()
+    public function recapForm()
     {
         return $this->belongsTo(PaymentOrderRecapForm::class);
     }
+    public function getUrlAttribute()
+    {
+        return asset('storage/' . $this->file_path);
+    }
+
 }

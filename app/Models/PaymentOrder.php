@@ -40,7 +40,7 @@ class PaymentOrder extends Model
         return $this->belongsTo(Project::class);
     }
 
-    public function paymentOrderRecapForms()
+    public function recapForms()
     {
         return $this->hasMany(PaymentOrderRecapForm::class);
     }

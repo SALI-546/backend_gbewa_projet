@@ -27,7 +27,7 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             .then((data) => {
                 const options = data.map((project) => ({
                     value: project.id,
-                    label: project.name || project.title, // Adapter selon la réponse de l'API
+                    label: project.name || project.title, 
                 }));
                 setProjectsOptions(options);
             })
@@ -76,20 +76,20 @@ const PaymentRequestForm = ({ onClose, editData }) => {
                     montant_presente_total: form.montant_presente_total,
                     montant_presente_eligible: form.montant_presente_eligible,
                     montant_sollicite: form.montant_sollicite,
-                    attachments: [] // Vous pouvez gérer les pièces jointes si nécessaire
+                    attachments: [] 
                 })));
             }
         }
     }, [editData]);
 
-    // Gestion du bouton "Ajouter" ou "Mettre à jour" pour soumettre le premier formulaire principal
+    
     const handleAddOrUpdate = () => {
         if (!selectedProject) {
             alert('Veuillez sélectionner un projet.');
             return;
         }
 
-        // Préparer les données à envoyer
+        
         const data = {
             project_id: selectedProject.value,
             operation: operation,
@@ -100,10 +100,10 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             quality: quality,
         };
 
-        // Afficher les données pour débogage
+       
         console.log('Données envoyées:', data);
 
-        // Déterminer si c'est une création ou une mise à jour
+        
         const method = editData ? 'PUT' : 'POST';
         const url = editData ? `/api/payment-requests/${editData.id}` : '/api/payment-requests';
 
@@ -127,7 +127,7 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             .then((data) => {
                 setPaymentRequestId(data.id);
                 alert(editData ? 'Demande de paiement modifiée avec succès.' : 'Demande de paiement créée avec succès.');
-                // Si en mode édition, passer directement au formulaire récapitulatif
+               
                 if (editData) {
                     setCurrentStep(2);
                     setRecapForms(Array.from({ length: recapCount }, () => ({
@@ -147,10 +147,10 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             });
     };
 
-    // Gestion du bouton "Suivant" pour passer au formulaire récapitulatif
+  
     const handleNext = () => {
         if (currentStep === 1) {
-            // Si en mode création, vérifier que le formulaire principal a été soumis
+         
             if (!editData && !paymentRequestId) {
                 alert("Veuillez soumettre le formulaire principal en cliquant sur 'Ajouter'.");
                 return;
@@ -265,7 +265,7 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             body: formData,
             headers: {
                 'Accept': 'application/json',
-                // Ne pas définir 'Content-Type' ici pour laisser le navigateur le gérer
+                
             },
         })
             .then((response) => {
@@ -278,12 +278,12 @@ const PaymentRequestForm = ({ onClose, editData }) => {
                 }
             })
             .then((data) => {
-                // Succès
+                
                 alert('Formulaires récapitulatifs soumis avec succès');
                 onClose();
             })
             .catch((error) => {
-                // Afficher l'erreur
+               
                 console.error('Erreur lors de la soumission des formulaires récapitulatifs:', error);
                 alert(
                     'Erreur lors de la soumission des formulaires récapitulatifs: ' + error.message

@@ -10,6 +10,9 @@ use App\Http\Controllers\Api\AccountingImputationController;
 use App\Http\Controllers\Api\PaymentRequestController;
 use App\Http\Controllers\Api\RecapFormController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\PaymentOrderController;
+use App\Http\Controllers\Api\PaymentOrderRecapFormController;
+
 
 Route::middleware('auth:sanctum')->group(function () {
     // Routes protégées par l'authentification si nécessaire
@@ -47,6 +50,10 @@ Route::put('/payment-requests/{id}', [PaymentRequestController::class, 'update']
 Route::delete('/payment-requests/{id}', [PaymentRequestController::class, 'destroy']);
 
     // Routes pour RecapFormController
-    Route::post('/recap-forms', [RecapFormController::class, 'store']);
-   
-    // Ajoutez d'autres routes si nécessaire
+Route::post('/recap-forms', [RecapFormController::class, 'store']);
+
+// Routes pour les ordres de paiement
+Route::apiResource('payment-orders', PaymentOrderController::class);
+
+// Routes pour les formulaires récapitulatifs
+Route::apiResource('payment-order-recap-forms', PaymentOrderRecapFormController::class);

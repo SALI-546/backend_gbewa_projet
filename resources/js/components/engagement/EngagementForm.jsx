@@ -55,8 +55,8 @@ const EngagementForm = ({ onClose, engagement, projects }) => {
                 setCurrentEngagement(response.data);
             }
             alert('Engagement enregistré avec succès.');
-            // Vous pouvez fermer le formulaire si vous le souhaitez
-            // onClose();
+            
+          
         } catch (err) {
             console.error('Erreur lors de la soumission du formulaire:', err);
             alert('Erreur lors de la soumission du formulaire : ' + (err.response?.data?.message || err.message));

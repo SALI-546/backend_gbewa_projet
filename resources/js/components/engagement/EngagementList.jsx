@@ -95,7 +95,7 @@ const EngagementList = () => {
             setSelectedEngagement(null);
             setShowForm(true);
         } else {
-            // Vérifier qu'un engagement est sélectionné
+            
             if (!selectedEngagement) {
                 alert('Veuillez sélectionner un engagement pour ajouter des données.');
                 return;
@@ -106,18 +106,18 @@ const EngagementList = () => {
 
     const handleCloseForm = () => {
         setShowForm(false);
-        fetchEngagements(); // Rafraîchir la liste des engagements après une modification
+        fetchEngagements(); 
     };
 
     const handleEditClick = (engagement) => {
         setSelectedEngagement(engagement);
-        setActiveTab('description'); // Commencer par l'onglet description
+        setActiveTab('description'); 
         setShowForm(true);
     };
 
     const handleDetailsClick = (engagement) => {
         setSelectedEngagement(engagement);
-        setActiveTab('description'); // Réinitialiser l'onglet actif lors de l'ouverture des détails
+        setActiveTab('description'); 
         setShowDetails(true);
     };
 

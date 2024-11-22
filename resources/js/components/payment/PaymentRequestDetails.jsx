@@ -16,7 +16,7 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
                 const response = await axios.get(`/api/payment-requests/${requestId}`, {
                     headers: {
                         'Accept': 'application/json',
-                        // 'Authorization': `Bearer ${token}`, // Si nécessaire
+                        
                     }
                 });
                 console.log('Réponse API pour PaymentRequestDetails:', response.data);
@@ -39,12 +39,12 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
         }
     }, [requestId]);
 
-    // Fonction pour afficher le formulaire de modification
+   
     const handleEditClick = () => {
         setIsEditing(true);
     };
 
-    // Fonction pour fermer le formulaire de modification et revenir aux détails
+    
     const handleCloseForm = async () => {
         setIsEditing(false);
         setLoading(true);
@@ -52,7 +52,7 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
             const response = await axios.get(`/api/payment-requests/${requestId}`, {
                 headers: {
                     'Accept': 'application/json',
-                    // 'Authorization': `Bearer ${token}`, // Si nécessaire
+                   
                 }
             });
             console.log('Réponse API pour PaymentRequestDetails après édition:', response.data);
@@ -106,20 +106,20 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
                                 <p>{paymentRequest.operation}</p>
                                 <p>{paymentRequest.beneficiary}</p>
                                 <p>{paymentRequest.invoice_details}</p>
-                                <p>{paymentRequest.activite || paymentRequest.budget_line}</p> {/* Assurez-vous que ceci est correct */}
+                                <p>{paymentRequest.activite || paymentRequest.budget_line}</p> 
                             </div>
                         </div>
                         <div className="flex">
                             <div className="w-1/2">
                                 <p><strong>Affaire suivie par :</strong></p>
                                 <p><strong>Qualité :</strong></p>
-                                {/* Suppression des champs 'phone' si non disponibles */}
+                              
                                 <p><strong>Mail :</strong></p>
                             </div>
                             <div className="w-1/2">
-                                <p>{paymentRequest.followedBy?.name}</p>
+                            <p>{paymentRequest.followed_by?.name}</p>
                                 <p>{paymentRequest.quality}</p>
-                                <p>{paymentRequest.followedBy?.email || '-'}</p> {/* Accès correct à l'email */}
+                                <p>{paymentRequest.followed_by?.email || '-'}</p> {/* Accès correct à l'email */}
                             </div>
                         </div>
                     </div>
@@ -204,7 +204,7 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
                     {/* Informations supplémentaires et boutons */}
                     <div className="mt-6">
                         <p className="text-gray-600 mb-2">Le chargé de Logistique</p>
-                        <p className="text-gray-600">SINSIN Daniel</p>
+                        <p className="text-gray-600">{paymentRequest.followed_by?.name}</p>
                         <div className="flex justify-end space-x-4 mt-4">
                             <button
                                 type="button"
