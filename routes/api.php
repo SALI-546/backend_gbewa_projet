@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\EngagementOperationController;
 use App\Http\Controllers\Api\BudgetTrackingController;
 use App\Http\Controllers\Api\AccountingImputationController;
+use App\Http\Controllers\Api\ProjectInfosController;
 use App\Http\Controllers\Api\PaymentRequestController;
 use App\Http\Controllers\Api\RecapFormController;
 use App\Http\Controllers\Api\UserController;
@@ -25,7 +26,7 @@ Route::get('/engagements/{id}', [EngagementController::class, 'show']);
 Route::put('/engagements/{id}', [EngagementController::class, 'update']);
 Route::delete('/engagements/{id}', [EngagementController::class, 'destroy']);
 
-Route::get('/projects', [ProjectController::class, 'index']);
+Route::get('/projects', [ProjectInfosController::class, 'index']);
 
 Route::get('/users', [UserController::class, 'index']);
 Route::get('/engagements/{engagement}/operations', [EngagementOperationController::class, 'index']);

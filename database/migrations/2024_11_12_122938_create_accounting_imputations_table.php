@@ -12,13 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('accounting_imputations', function (Blueprint $table) {
-            $table->id(); // id
-            $table->unsignedBigInteger('engagement_id'); // engagement_id
-            $table->string('account_code'); // account_code
-            $table->decimal('amount', 15, 2); // amount
-            $table->string('description'); // description
-            $table->enum('signature', ['Visa Comptable', 'Visa Chef Comptable', 'Visa DAF', 'Visa DE']); // signature
-            $table->timestamps(); // created_at et updated_at
+            $table->id();
+            $table->unsignedBigInteger('engagement_id');
+            $table->string('account_code')->nullable(); // account_code
+            $table->decimal('amount', 15, 2)->nullable(); // amount
+            $table->string('order_number')->nullable(); // Numéro d'ordre
+            $table->string('description')->nullable();
+            $table->enum('signature', ['Visa Comptable', 'Visa Chef Comptable', 'Visa DAF', 'Visa DE'])->nullable();
+            $table->timestamps();
 
             // Clé étrangère
             $table->foreign('engagement_id')->references('id')->on('engagements')->onDelete('cascade');
