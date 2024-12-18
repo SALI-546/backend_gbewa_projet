@@ -31,3 +31,9 @@ input[type="radio"].form-radio:checked::before {
     width: 100%;
     height: 100%;
 }
+.signature-canvas {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+

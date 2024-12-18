@@ -35,18 +35,24 @@ class Engagement extends Model
         return $this->hasMany(EngagementOperation::class);
     }
 
-    public function budgetTrackings()
+        public function budgetTracking()
     {
-        return $this->hasMany(BudgetTracking::class);
+        return $this->hasOne(BudgetTracking::class, 'engagement_id');
     }
 
-    public function accountingImputations()
+    public function accountingImputation()
     {
-        return $this->hasMany(AccountingImputation::class);
+        return $this->hasOne(AccountingImputation::class, 'engagement_id');
     }
 
     public function engagementAttachments()
     {
         return $this->hasMany(EngagementAttachment::class);
     }
+
+        public function entries()
+    {
+        return $this->hasMany(AccountingImputationEntry::class, 'accounting_imputation_id');
+    }
+
 }

@@ -34,6 +34,7 @@ class PaymentOrder extends Model
         'validation_signed' => 'boolean',
         'validation_signed_at' => 'date',
     ];
+
     // Relations
     public function project()
     {
@@ -43,5 +44,10 @@ class PaymentOrder extends Model
     public function recapForms()
     {
         return $this->hasMany(PaymentOrderRecapForm::class);
+    }
+
+    public function signatures()
+    {
+        return $this->hasMany(Signature::class);
     }
 }

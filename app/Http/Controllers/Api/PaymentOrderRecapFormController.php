@@ -133,7 +133,7 @@ class PaymentOrderRecapFormController extends Controller
                     'id' => $attachment->id,
                     'filePath' => $attachment->file_path,
                     'fileName' => $attachment->file_name,
-                    'url' => $attachment->url, // Assurez-vous que 'url' est défini via l'accessor
+                    'url' => $attachment->url, 
                 ];
             }),
         ];
@@ -195,7 +195,7 @@ class PaymentOrderRecapFormController extends Controller
                         'id' => $attachment->id,
                         'filePath' => $attachment->file_path,
                         'fileName' => $attachment->file_name,
-                        'url' => $attachment->url, // Assurez-vous que 'url' est défini via l'accessor
+                        'url' => $attachment->url, 
                     ];
                 }),
             ];

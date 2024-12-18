@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const BudgetTrackingForm = ({ onClose, engagementId }) => {
+const BudgetTrackingForm = ({ onClose, engagementId, existingData }) => {
     const [formData, setFormData] = useState({
         budget_line: '',
         amount_allocated: '',
@@ -14,23 +14,24 @@ const BudgetTrackingForm = ({ onClose, engagementId }) => {
         moyens_de_paiement: '',
         signature: '',
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        const fetchBudgetTracking = async () => {
-            try {
-                const response = await axios.get(`/api/engagements/${engagementId}/budget-tracking`);
-                if (response.data) {
-                    setFormData(response.data);
-                }
-            } catch (err) {
-                console.error('Erreur lors de la récupération du suivi budgétaire:', err);
-            }
-        };
-
-        if (engagementId) {
-            fetchBudgetTracking();
+        if (existingData) {
+            setFormData({
+                budget_line: existingData.budget_line || '',
+                amount_allocated: existingData.amount_allocated || '',
+                amount_spent: existingData.amount_spent || '',
+                amount_approved: existingData.amount_approved || '',
+                old_balance: existingData.old_balance || '',
+                new_balance: existingData.new_balance || '',
+                fournisseurs_prestataire: existingData.fournisseurs_prestataire || '',
+                avis: existingData.avis || '',
+                moyens_de_paiement: existingData.moyens_de_paiement || '',
+                signature: existingData.signature || '',
+            });
         }
-    }, [engagementId]);
+    }, [existingData]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -39,20 +40,32 @@ const BudgetTrackingForm = ({ onClose, engagementId }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
+
+        const payload = {
+            ...formData,
+            amount_allocated: parseFloat(formData.amount_allocated) || 0,
+            amount_spent: parseFloat(formData.amount_spent) || 0,
+            amount_approved: parseFloat(formData.amount_approved) || 0,
+            old_balance: parseFloat(formData.old_balance) || 0,
+            new_balance: parseFloat(formData.new_balance) || 0,
+        };
 
         try {
-            if (formData.id) {
+            if (existingData && existingData.id) {
                 // Mettre à jour le suivi budgétaire existant
-                await axios.put(`/api/budget-trackings/${formData.id}`, formData);
+                await axios.put(`/api/budget-trackings/${existingData.id}`, payload);
             } else {
                 // Créer un nouveau suivi budgétaire
-                await axios.post(`/api/engagements/${engagementId}/budget-tracking`, formData);
+                await axios.post(`/api/engagements/${engagementId}/budget-tracking`, payload);
             }
             alert('Suivi budgétaire enregistré avec succès.');
             onClose();
         } catch (err) {
             console.error('Erreur lors de l\'enregistrement du suivi budgétaire:', err);
             alert('Erreur lors de l\'enregistrement du suivi budgétaire : ' + (err.response?.data?.message || err.message));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -63,7 +76,7 @@ const BudgetTrackingForm = ({ onClose, engagementId }) => {
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">SUIVI BUDGÉTAIRE</h2>
+                    <h2 className="text-xl font-bold">{existingData ? 'Modifier Suivi Budgétaire' : 'Créer Suivi Budgétaire'}</h2>
                     <button onClick={onClose} className="text-gray-600 hover:text-black focus:outline-none text-2xl">
                         &times;
                     </button>
@@ -283,9 +296,12 @@ const BudgetTrackingForm = ({ onClose, engagementId }) => {
 
                     <button
                         type="submit"
-                        className="bg-green-600 text-white py-2 px-4 rounded-lg w-full mt-6 hover:bg-green-700 transition-colors duration-200"
+                        className={`bg-green-600 text-white py-2 px-4 rounded-lg w-full mt-6 hover:bg-green-700 transition-colors duration-200 ${
+                            isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        disabled={isSubmitting}
                     >
-                        Enregistrer
+                        {existingData ? 'Mettre à Jour' : 'Enregistrer'}
                     </button>
                 </form>
             </div>

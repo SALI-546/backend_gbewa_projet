@@ -1,5 +1,3 @@
-// OperationDescriptionModal.jsx
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaEdit, FaTrashAlt } from 'react-icons/fa';
@@ -15,6 +13,7 @@ const OperationDescriptionModal = ({ onClose, engagementId }) => {
         observations: '',
     });
     const [editingIndex, setEditingIndex] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         // Récupérer les opérations existantes pour l'engagement
@@ -46,36 +45,49 @@ const OperationDescriptionModal = ({ onClose, engagementId }) => {
         return montant.toFixed(2);
     };
 
-    const handleAddOperation = () => {
-        const montant = calculateMontant();
-        if (editingIndex !== null) {
-            // Mettre à jour une opération existante
-            const updatedOperations = [...operations];
-            updatedOperations[editingIndex] = {
-                ...newOperation,
-                montant: montant,
-            };
-            setOperations(updatedOperations);
-            setEditingIndex(null);
-        } else {
-            // Ajouter une nouvelle opération
-            setOperations([
-                ...operations,
-                {
+    const handleAddOrUpdateOperation = async () => {
+        setIsSubmitting(true);
+        try {
+            if (editingIndex !== null) {
+                // Mettre à jour l'opération existante via l'API
+                const operationToUpdate = operations[editingIndex];
+                const response = await axios.put(`/api/operations/${operationToUpdate.id}`, {
                     ...newOperation,
-                    montant: montant,
-                },
-            ]);
+                    montant: calculateMontant(),
+                });
+                // Mettre à jour l'état local
+                const updatedOperations = [...operations];
+                updatedOperations[editingIndex] = response.data;
+                setOperations(updatedOperations);
+                setEditingIndex(null);
+            } else {
+                // Ajouter une nouvelle opération via l'API
+                const response = await axios.post(`/api/engagements/${engagementId}/operations`, {
+                    operations: [
+                        {
+                            ...newOperation,
+                            montant: calculateMontant(),
+                        },
+                    ],
+                });
+                // Mettre à jour l'état local
+                setOperations([...operations, ...response.data.operations]);
+            }
+            // Réinitialiser le formulaire
+            setNewOperation({
+                designation: '',
+                quantite: '',
+                nombre: '',
+                pu: '',
+                montant: '',
+                observations: '',
+            });
+        } catch (err) {
+            console.error('Erreur lors de l\'enregistrement des opérations:', err);
+            alert('Erreur lors de l\'enregistrement des opérations : ' + (err.response?.data?.message || err.message));
+        } finally {
+            setIsSubmitting(false);
         }
-        // Réinitialiser le formulaire
-        setNewOperation({
-            designation: '',
-            quantite: '',
-            nombre: '',
-            pu: '',
-            montant: '',
-            observations: '',
-        });
     };
 
     const handleEditOperation = (index) => {
@@ -83,15 +95,23 @@ const OperationDescriptionModal = ({ onClose, engagementId }) => {
         setNewOperation(operations[index]);
     };
 
-    const handleDeleteOperation = (index) => {
-        const updatedOperations = operations.filter((_, i) => i !== index);
-        setOperations(updatedOperations);
+    const handleDeleteOperation = async (index) => {
+        const operation = operations[index];
+        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette opération ?')) {
+            try {
+                await axios.delete(`/api/operations/${operation.id}`);
+                const updatedOperations = operations.filter((_, i) => i !== index);
+                setOperations(updatedOperations);
+            } catch (err) {
+                console.error('Erreur lors de la suppression de l\'opération:', err);
+                alert('Erreur lors de la suppression de l\'opération : ' + (err.response?.data?.message || err.message));
+            }
+        }
     };
 
     const handleSubmit = async () => {
         try {
-            // Envoyer les opérations au backend
-            await axios.post(`/api/engagements/${engagementId}/operations`, { operations });
+            // Toutes les opérations ont déjà été gérées via les mises à jour individuelles
             alert('Opérations enregistrées avec succès.');
             onClose();
         } catch (err) {
@@ -127,7 +147,7 @@ const OperationDescriptionModal = ({ onClose, engagementId }) => {
                     </thead>
                     <tbody>
                         {operations.map((operation, index) => (
-                            <tr key={index} className="hover:bg-gray-50">
+                            <tr key={operation.id} className="hover:bg-gray-50">
                                 <td className="py-2 px-4 border border-gray-300">{index + 1}</td>
                                 <td className="py-2 px-4 border border-gray-300">{operation.designation}</td>
                                 <td className="py-2 px-4 border border-gray-300">{operation.quantite}</td>
@@ -154,7 +174,7 @@ const OperationDescriptionModal = ({ onClose, engagementId }) => {
                     </tbody>
                 </table>
 
-                {/* Section Ajouter une ligne */}
+                {/* Section Ajouter / Modifier une ligne */}
                 <div className="mb-4">
                     <p className="font-medium mb-2">{editingIndex !== null ? 'Modifier la ligne' : 'Ajouter une ligne'}</p>
 
@@ -246,11 +266,15 @@ const OperationDescriptionModal = ({ onClose, engagementId }) => {
                     </button>
                     <div className="flex space-x-2">
                         <button
-                            onClick={handleAddOperation}
-                            className="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700"
+                            onClick={handleAddOrUpdateOperation}
+                            className={`bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 ${
+                                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                            disabled={isSubmitting}
                         >
                             {editingIndex !== null ? 'Modifier la ligne' : 'Ajouter la ligne'}
                         </button>
+                        {/* Vous pouvez ajouter un bouton pour sauvegarder toutes les opérations si nécessaire */}
                         <button
                             onClick={handleSubmit}
                             className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"

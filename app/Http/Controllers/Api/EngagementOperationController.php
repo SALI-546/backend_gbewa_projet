@@ -31,4 +31,29 @@ class EngagementOperationController extends Controller
 
         return response()->json(['message' => 'Opérations enregistrées avec succès']);
     }
+
+    /**
+     * Met à jour une opération existante.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id  ID de l'opération
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function update(Request $request, $id)
+    {
+        $operation = EngagementOperation::findOrFail($id);
+
+        $validatedData = $request->validate([
+            'designation' => 'required|string',
+            'quantite' => 'required|numeric|min:0',
+            'nombre' => 'required|numeric|min:0',
+            'pu' => 'required|numeric|min:0',
+            'montant' => 'required|numeric|min:0',
+            'observations' => 'nullable|string',
+        ]);
+
+        $operation->update($validatedData);
+
+        return response()->json($operation);
+    }
 }

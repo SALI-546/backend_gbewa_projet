@@ -16,28 +16,28 @@ class PaymentOrderController extends Controller
     public function index(Request $request)
     {
         // Requête de base avec relations
-        $query = PaymentOrder::with('project', 'recapForms.attachments');
-
+        $query = PaymentOrder::with('project', 'recapForms.attachments', 'signatures');
+    
         // Filtrage par projet
         if ($request->has('project_id') && $request->project_id) {
             $query->where('project_id', $request->project_id);
         }
-
+    
         // Filtrage par date de début
         if ($request->has('start_date') && $request->start_date) {
             $query->whereDate('created_at', '>=', $request->start_date);
         }
-
+    
         // Filtrage par date de fin
         if ($request->has('end_date') && $request->end_date) {
             $query->whereDate('created_at', '<=', $request->end_date);
         }
-
+    
         // Récupérer les résultats
         $paymentOrders = $query->get();
-
+    
         Log::info("PaymentOrderController@index - Nombre d'ordres de paiement récupérés: " . $paymentOrders->count());
-
+    
         // Transformer les données pour utiliser camelCase
         $paymentOrders = $paymentOrders->map(function($order) {
             return [
@@ -65,13 +65,23 @@ class PaymentOrderController extends Controller
                         }),
                     ];
                 }),
+                'signatures' => $order->signatures->map(function($signature) {
+                    return [
+                        'id' => $signature->id,
+                        'role' => $signature->role,
+                        'name' => $signature->name,
+                        'signatureUrl' => $signature->url,
+                        'signedAt' => $signature->signed_at,
+                    ];
+                }),
                 'createdAt' => $order->created_at,
                 // Ajoutez d'autres champs si nécessaire
             ];
         });
-
+    
         return response()->json($paymentOrders);
     }
+    
 
     /**
      * Créer un nouvel ordre de paiement.
@@ -130,41 +140,50 @@ class PaymentOrderController extends Controller
      * Afficher un ordre de paiement spécifique.
      */
     public function show($id)
-    {
-        $paymentOrder = PaymentOrder::with('project', 'recapForms.attachments')->findOrFail($id);
+{
+    $paymentOrder = PaymentOrder::with('project', 'recapForms.attachments', 'signatures')->findOrFail($id);
 
-        // Transformer les données pour utiliser camelCase
-        $paymentOrderTransformed = [
-            'id' => $paymentOrder->id,
-            'project' => $paymentOrder->project,
-            'orderNumber' => $paymentOrder->order_number,
-            'account' => $paymentOrder->account,
-            'title' => $paymentOrder->title,
-            'invoiceNumber' => $paymentOrder->invoice_number,
-            'billOfLadingNumber' => $paymentOrder->bill_of_lading_number,
-            'recapForms' => $paymentOrder->recapForms->map(function($form) {
-                return [
-                    'id' => $form->id,
-                    'beneficiaire' => $form->beneficiaire,
-                    'montant' => $form->montant,
-                    'objetDepense' => $form->objet_depense,
-                    'ligneBudgetaire' => $form->ligne_budgetaire,
-                    'piecesJointes' => $form->attachments->map(function($attachment) {
-                        return [
-                            'id' => $attachment->id,
-                            'filePath' => $attachment->file_path,
-                            'fileName' => $attachment->file_name,
-                            'url' => $attachment->url, // Assurez-vous que 'url' est défini via l'accessor
-                        ];
-                    }),
-                ];
-            }),
-            'createdAt' => $paymentOrder->created_at,
-            // Ajoutez d'autres champs si nécessaire
-        ];
+    // Transformer les données pour utiliser camelCase
+    $paymentOrderTransformed = [
+        'id' => $paymentOrder->id,
+        'project' => $paymentOrder->project,
+        'orderNumber' => $paymentOrder->order_number,
+        'account' => $paymentOrder->account,
+        'title' => $paymentOrder->title,
+        'invoiceNumber' => $paymentOrder->invoice_number,
+        'billOfLadingNumber' => $paymentOrder->bill_of_lading_number,
+        'recapForms' => $paymentOrder->recapForms->map(function($form) {
+            return [
+                'id' => $form->id,
+                'beneficiaire' => $form->beneficiaire,
+                'montant' => $form->montant,
+                'objetDepense' => $form->objet_depense,
+                'ligneBudgetaire' => $form->ligne_budgetaire,
+                'piecesJointes' => $form->attachments->map(function($attachment) {
+                    return [
+                        'id' => $attachment->id,
+                        'filePath' => $attachment->file_path,
+                        'fileName' => $attachment->file_name,
+                        'url' => $attachment->url, 
+                    ];
+                }),
+            ];
+        }),
+        'signatures' => $paymentOrder->signatures->map(function($signature) {
+            return [
+                'id' => $signature->id,
+                'role' => $signature->role,
+                'name' => $signature->name,
+                'signatureUrl' => $signature->url,
+                'signedAt' => $signature->signed_at,
+            ];
+        }),
+        'createdAt' => $paymentOrder->created_at,
+        // Ajoutez d'autres champs si nécessaire
+    ];
 
-        return response()->json($paymentOrderTransformed);
-    }
+    return response()->json($paymentOrderTransformed);
+}
 
     /**
      * Mettre à jour un ordre de paiement existant.

@@ -50,10 +50,10 @@ const AddPaymentOrderModal = ({ isVisible, onClose, editData, onSuccess }) => {
         fetchProjects();
     }, []);
 
+    // Effect pour gérer l'édition ou l'ajout
     useEffect(() => {
         console.log('Edit Data:', editData);
         if (editData) {
-            
             const isRecapFormsValid = Array.isArray(editData.recapForms) && editData.recapForms.length > 0;
 
             setCurrentStep(isRecapFormsValid ? 2 : 1);
@@ -64,8 +64,8 @@ const AddPaymentOrderModal = ({ isVisible, onClose, editData, onSuccess }) => {
             setFormData({
                 account: editData.account || '',
                 title: editData.title || '',
-                invoice_number: editData.invoice_number || '',
-                bill_of_lading_number: editData.bill_of_lading_number || '',
+                invoice_number: editData.invoiceNumber || '',
+                bill_of_lading_number: editData.billOfLadingNumber || '',
             });
             if (isRecapFormsValid) {
                 setRecapCount(editData.recapForms.length);
@@ -73,9 +73,9 @@ const AddPaymentOrderModal = ({ isVisible, onClose, editData, onSuccess }) => {
                     id: form.id || null, 
                     beneficiaire: form.beneficiaire || '',
                     montant: form.montant || '',
-                    piecesJointes: [], 
-                    objetDepense: form.objet_depense || '',
-                    ligneBudgetaire: form.ligne_budgetaire || '',
+                    piecesJointes: [], // Vous pouvez précharger les pièces jointes si nécessaire
+                    objetDepense: form.objetDepense || '', // Correction ici
+                    ligneBudgetaire: form.ligneBudgetaire || '', // Correction ici
                 })));
                 setPaymentOrderId(editData.id);
             } else {
@@ -174,7 +174,9 @@ const AddPaymentOrderModal = ({ isVisible, onClose, editData, onSuccess }) => {
     };
 
     // Soumettre les données du formulaire principal
-    const handleSubmitMainForm = async () => {
+    const handleSubmitMainForm = async (e) => {
+        e.preventDefault(); // Assurez-vous que l'événement par défaut est empêché
+
         // Préparer les données à envoyer
         const data = {
             project_id: selectedProject.value,
@@ -196,7 +198,7 @@ const AddPaymentOrderModal = ({ isVisible, onClose, editData, onSuccess }) => {
                 alert('Ordre de paiement créé avec succès.');
             }
             setPaymentOrderId(response.data.data.id); 
-            onSuccess(); 
+            if (onSuccess) onSuccess(); // Appeler onSuccess seulement s'il est défini
         } catch (error) {
             console.error('Erreur lors de la soumission du formulaire principal :', error.response);
             const message = error.response?.data?.message || 'Erreur lors de la soumission du formulaire principal.';
@@ -215,11 +217,14 @@ const AddPaymentOrderModal = ({ isVisible, onClose, editData, onSuccess }) => {
 
         // Préparer les données à envoyer
         const formDataToSend = new FormData();
-        formDataToSend.append('payment_order_id', paymentOrderId);
+        // Pour la mise à jour, 'payment_order_id' n'est pas nécessaire
+        if (!form.id) {
+            formDataToSend.append('payment_order_id', paymentOrderId);
+        }
         formDataToSend.append('beneficiaire', form.beneficiaire);
         formDataToSend.append('montant', form.montant);
-        formDataToSend.append('objet_depense', form.objetDepense);
-        formDataToSend.append('ligne_budgetaire', form.ligneBudgetaire);
+        formDataToSend.append('objet_depense', form.objetDepense); // Utilisation de snake_case
+        formDataToSend.append('ligne_budgetaire', form.ligneBudgetaire); // Utilisation de snake_case
 
         // Ajouter les fichiers
         form.piecesJointes.forEach((file) => {
@@ -252,7 +257,7 @@ const AddPaymentOrderModal = ({ isVisible, onClose, editData, onSuccess }) => {
                 updatedForms[index] = newRecapForm;
                 setRecapForms(updatedForms);
             }
-            onSuccess(); // Appeler le callback pour rafraîchir la liste
+            if (onSuccess) onSuccess(); // Appeler onSuccess seulement s'il est défini
         } catch (error) {
             console.error(`Erreur lors de la soumission du formulaire récapitulatif ${index + 1} :`, error.response);
             const message = error.response?.data?.message || `Erreur lors de la soumission du formulaire récapitulatif ${index + 1}.`;
@@ -271,7 +276,7 @@ const AddPaymentOrderModal = ({ isVisible, onClose, editData, onSuccess }) => {
                 </div>
                 {currentStep === 1 ? (
                     // Formulaire principal
-                    <form onSubmit={async (e) => { e.preventDefault(); await handleSubmitMainForm(); }}>
+                    <form onSubmit={handleSubmitMainForm}>
                         <div className="mb-4">
                             <label className="block text-gray-700 mb-1">Nom du projet<span className="text-red-500">*</span></label>
                             <Select
@@ -365,7 +370,7 @@ const AddPaymentOrderModal = ({ isVisible, onClose, editData, onSuccess }) => {
                                     value={recapCount}
                                     onChange={handleRecapCountChange}
                                     className="border border-gray-300 rounded-lg w-full px-4 py-2"
-                                    placeholder="Nombre de formulaires récapitulatifs"
+                                    placeholder="Nombre de formulaires récapitulatif"
                                     required
                                 />
                             </div>
@@ -437,7 +442,7 @@ const AddPaymentOrderModal = ({ isVisible, onClose, editData, onSuccess }) => {
                                     onClick={() => handleSubmitRecapForm(currentRecapForm - 1)}
                                     className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg flex items-center">
                                     <FaSave className="mr-2" />
-                                    Soumettre
+                                    {recapForms[currentRecapForm - 1]?.id ? 'Mettre à jour' : 'Soumettre'}
                                 </button>
                                 {currentRecapForm < recapCount ? (
                                     <button 

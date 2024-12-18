@@ -46,7 +46,13 @@ class EngagementController extends Controller
 
     public function show($id)
     {
-        $engagement = Engagement::with(['project', 'engagementOperations'])->findOrFail($id);
+        // Ajout du chargement des relations budgetTracking et accountingImputation.entries
+        $engagement = Engagement::with([
+            'project',
+            'engagementOperations',
+            'budgetTracking',
+            'accountingImputation.entries'
+        ])->findOrFail($id);
 
         return response()->json($engagement);
     }
