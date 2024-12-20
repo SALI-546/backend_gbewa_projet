@@ -1,13 +1,54 @@
+// PaymentRequestForm.jsx
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { FaTimes } from 'react-icons/fa';
+import axios from 'axios';
+
+// Composant d'Alerte de Succès
+const SuccessAlert = ({ message, onClose }) => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onClose();
+        }, 3000); // Fermer automatiquement après 3 secondes
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span className="block sm:inline">{message}</span>
+            <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
+                <svg className="fill-current h-6 w-6 text-green-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" onClick={onClose}>
+                    <title>Close</title>
+                    <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                </svg>
+            </span>
+        </div>
+    );
+};
+
+// Composant d'Alerte d'Erreur
+const ErrorAlert = ({ message, onClose }) => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onClose();
+        }, 5000); // Fermer automatiquement après 5 secondes
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span className="block sm:inline">{message}</span>
+            <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
+                <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" onClick={onClose}>
+                    <title>Close</title>
+                    <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                </svg>
+            </span>
+        </div>
+    );
+};
 
 const PaymentRequestForm = ({ onClose, editData }) => {
-    const [currentStep, setCurrentStep] = useState(1);
-    const [recapCount, setRecapCount] = useState(1);
-    const [currentRecapForm, setCurrentRecapForm] = useState(1);
-    const [recapForms, setRecapForms] = useState([]);
-
     // États pour les champs du formulaire principal
     const [selectedProject, setSelectedProject] = useState(null);
     const [projectsOptions, setProjectsOptions] = useState([]);
@@ -18,8 +59,13 @@ const PaymentRequestForm = ({ onClose, editData }) => {
     const [followedBy, setFollowedBy] = useState(null);
     const [usersOptions, setUsersOptions] = useState([]);
     const [quality, setQuality] = useState('');
-    const [paymentRequestId, setPaymentRequestId] = useState(null);
+    const [orderNumber, setOrderNumber] = useState(''); // Ajout de l'état pour le numéro d'ordre
 
+    const [recapForms, setRecapForms] = useState([]);
+
+    // États pour les alertes
+    const [successMessage, setSuccessMessage] = useState(null);
+    const [errorMessage, setErrorMessage] = useState(null);
     // Charger les projets depuis l'API
     useEffect(() => {
         fetch('/api/projects')
@@ -27,12 +73,13 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             .then((data) => {
                 const options = data.map((project) => ({
                     value: project.id,
-                    label: project.name || project.title, 
+                    label: project.name || project.title,
                 }));
                 setProjectsOptions(options);
             })
             .catch((error) => {
                 console.error('Erreur lors de la récupération des projets :', error);
+                setErrorMessage('Impossible de récupérer les projets.');
             });
     }, []);
 
@@ -49,8 +96,10 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             })
             .catch((error) => {
                 console.error('Erreur lors de la récupération des utilisateurs :', error);
+                setErrorMessage('Impossible de récupérer les utilisateurs.');
             });
     }, []);
+
 
     // Charger les données de modification si disponibles
     useEffect(() => {
@@ -59,145 +108,89 @@ const PaymentRequestForm = ({ onClose, editData }) => {
                 value: editData.project.id,
                 label: editData.project.name || editData.project.title,
             });
+            setOrderNumber(editData.orderNumber || ''); // Utiliser camelCase
             setOperation(editData.operation || '');
             setBeneficiary(editData.beneficiary || '');
-            setInvoiceDetails(editData.invoice_details || '');
-            setBudgetLine(editData.budget_line || '');
+            setInvoiceDetails(editData.invoiceDetails || '');
+            setBudgetLine(editData.budgetLine || '');
             setFollowedBy({
-                value: editData.followed_by.id,
-                label: editData.followed_by.name,
+                value: editData.followedBy?.id,
+                label: editData.followedBy?.name,
             });
             setQuality(editData.quality || '');
+
             // Initialiser les formulaires récapitulatifs si disponibles
-            if (editData.recap_forms && editData.recap_forms.length > 0) {
-                setRecapCount(editData.recap_forms.length);
-                setRecapForms(editData.recap_forms.map(form => ({
+            if (editData.recapForms && editData.recapForms.length > 0) {
+                setRecapForms(editData.recapForms.map(form => ({
+                    id: form.id, // Ajouter l'ID pour les formulaires existants
                     activite: form.activite,
-                    montant_presente_total: form.montant_presente_total,
-                    montant_presente_eligible: form.montant_presente_eligible,
-                    montant_sollicite: form.montant_sollicite,
-                    attachments: [] 
+                    montantPresenteTotal: form.montantPresenteTotal,
+                    montantPresenteEligible: form.montantPresenteEligible,
+                    montantSollicite: form.montantSollicite,
+                    attachments: form.attachments || [], // Pièces jointes existantes
+                    newAttachments: [] // Pièces jointes nouvelles
                 })));
+            } else {
+                setRecapForms([{
+                    id: null,
+                    activite: '',
+                    montantPresenteTotal: '',
+                    montantPresenteEligible: '',
+                    montantSollicite: '',
+                    attachments: [],
+                    newAttachments: []
+                }]);
             }
+        } else {
+            // Initialiser les états pour la création
+            setSelectedProject(null);
+            setOrderNumber('');
+            setOperation('');
+            setBeneficiary('');
+            setInvoiceDetails('');
+            setBudgetLine('');
+            setFollowedBy(null);
+            setQuality('');
+            setRecapForms([{
+                id: null,
+                activite: '',
+                montantPresenteTotal: '',
+                montantPresenteEligible: '',
+                montantSollicite: '',
+                attachments: [],
+                newAttachments: []
+            }]);
         }
     }, [editData]);
 
-    
-    const handleAddOrUpdate = () => {
-        if (!selectedProject) {
-            alert('Veuillez sélectionner un projet.');
-            return;
-        }
-
-        
-        const data = {
-            project_id: selectedProject.value,
-            operation: operation,
-            beneficiary: beneficiary,
-            invoice_details: invoiceDetails,
-            budget_line: budgetLine,
-            followed_by_id: followedBy ? followedBy.value : null,
-            quality: quality,
-        };
-
-       
-        console.log('Données envoyées:', data);
-
-        
-        const method = editData ? 'PUT' : 'POST';
-        const url = editData ? `/api/payment-requests/${editData.id}` : '/api/payment-requests';
-
-        fetch(url, {
-            method: method,
-            body: JSON.stringify(data),
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-        })
-            .then((response) => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    return response.json().then((errorData) => {
-                        throw new Error(errorData.message || 'Une erreur est survenue');
-                    });
-                }
-            })
-            .then((data) => {
-                setPaymentRequestId(data.id);
-                alert(editData ? 'Demande de paiement modifiée avec succès.' : 'Demande de paiement créée avec succès.');
-               
-                if (editData) {
-                    setCurrentStep(2);
-                    setRecapForms(Array.from({ length: recapCount }, () => ({
-                        activite: '',
-                        montant_presente_total: '',
-                        montant_presente_eligible: '',
-                        montant_sollicite: '',
-                        attachments: []
-                    })));
-                }
-            })
-            .catch((error) => {
-                console.error('Erreur lors de la soumission du formulaire:', error);
-                alert(
-                    'Erreur lors de la soumission du formulaire: ' + error.message
-                );
-            });
-    };
-
-  
-    const handleNext = () => {
-        if (currentStep === 1) {
-         
-            if (!editData && !paymentRequestId) {
-                alert("Veuillez soumettre le formulaire principal en cliquant sur 'Ajouter'.");
-                return;
-            }
-            setCurrentStep(2);
-            setRecapForms(Array.from({ length: recapCount }, () => ({
-                activite: '',
-                montant_presente_total: '',
-                montant_presente_eligible: '',
-                montant_sollicite: '',
-                attachments: []
-            })));
-        } else if (currentRecapForm < recapCount) {
-            setCurrentRecapForm(currentRecapForm + 1);
-        }
-    };
-
-    // Gestion du bouton "Précédent" pour revenir dans les formulaires
-    const handlePrevious = () => {
-        if (currentStep === 2 && currentRecapForm > 1) {
-            setCurrentRecapForm(currentRecapForm - 1);
-        } else if (currentStep === 2 && currentRecapForm === 1) {
-            setCurrentStep(1);
-        }
-    };
-
-    // Gestion du champ de saisie de `recapCount`
-    const handleRecapCountChange = (e) => {
-        const count = Math.max(1, Number(e.target.value));
-        setRecapCount(count);
-        setRecapForms(Array.from({ length: count }, () => ({
+    // Fonction pour ajouter un formulaire récapitulatif
+    const handleAddRecapForm = () => {
+        setRecapForms([...recapForms, {
+            id: null,
             activite: '',
-            montant_presente_total: '',
-            montant_presente_eligible: '',
-            montant_sollicite: '',
-            attachments: []
-        })));
+            montantPresenteTotal: '',
+            montantPresenteEligible: '',
+            montantSollicite: '',
+            attachments: [],
+            newAttachments: []
+        }]);
     };
 
-    // Gestion des changements dans les champs des formulaires récapitulatifs
+    // Fonction pour supprimer un formulaire récapitulatif
+    const handleRemoveRecapForm = (index) => {
+        const updatedForms = [...recapForms];
+        updatedForms.splice(index, 1);
+        setRecapForms(updatedForms);
+    };
+
+    // Fonction pour gérer les changements dans les formulaires récapitulatifs
     const handleRecapFormChange = (index, field, value) => {
         const updatedForms = [...recapForms];
         updatedForms[index][field] = value;
         setRecapForms(updatedForms);
     };
 
-    // Gestion des fichiers de pièces jointes
+    // Fonction pour gérer les changements dans les fichiers
     const handleFileChange = (index, files) => {
         const allowedTypes = [
             'application/pdf',
@@ -218,299 +211,353 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             }
         }
 
-        updatedForms[index].attachments = validFiles;
+        // Ajouter les fichiers valides aux nouvelles pièces jointes
+        updatedForms[index].newAttachments = [...updatedForms[index].newAttachments, ...validFiles];
         setRecapForms(updatedForms);
     };
 
-    // Fonction pour soumettre les formulaires récapitulatifs
-    const handleSubmit = () => {
-        if (!paymentRequestId && !editData) {
-            alert("Veuillez d'abord créer la demande de paiement en cliquant sur 'Ajouter'.");
+    // Fonctions pour fermer les alertes
+    const closeSuccessAlert = () => {
+        setSuccessMessage(null);
+    };
+
+    const closeErrorAlert = () => {
+        setErrorMessage(null);
+    };
+
+    // Fonction pour gérer la soumission du formulaire
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!selectedProject) {
+            alert('Veuillez sélectionner un projet.');
             return;
         }
 
-        // Préparer les données à envoyer
-        const formData = new FormData();
+        if (!orderNumber) {
+            alert('Veuillez saisir un numéro d\'ordre.');
+            return;
+        }
 
-        formData.append('payment_request_id', paymentRequestId || editData.id);
+        // Valider que tous les formulaires récapitulatifs sont remplis
+        for (let i = 0; i < recapForms.length; i++) {
+            const form = recapForms[i];
+            if (
+                !form.activite ||
+                form.montantPresenteTotal === '' ||
+                form.montantPresenteEligible === '' ||
+                form.montantSollicite === ''
+            ) {
+                alert(`Veuillez remplir tous les champs du formulaire récapitulatif ${i + 1}.`);
+                return;
+            }
+        }
 
-        // Ajouter les formulaires récapitulatifs
-        recapForms.forEach((recapForm, index) => {
-            formData.append(`recap_forms[${index}][activite]`, recapForm.activite);
-            formData.append(`recap_forms[${index}][montant_presente_total]`, recapForm.montant_presente_total);
-            formData.append(`recap_forms[${index}][montant_presente_eligible]`, recapForm.montant_presente_eligible);
-            formData.append(`recap_forms[${index}][montant_sollicite]`, recapForm.montant_sollicite);
+        try {
+            // Préparer les données
+            const formData = new FormData();
+            formData.append('project_id', selectedProject.value);
+            formData.append('order_number', orderNumber); // Inclusion du numéro d'ordre
+            formData.append('operation', operation);
+            formData.append('beneficiary', beneficiary);
+            formData.append('invoice_details', invoiceDetails);
+            formData.append('budget_line', budgetLine);
+            if (followedBy) formData.append('followed_by_id', followedBy.value);
+            formData.append('quality', quality);
 
-            // Ajouter les pièces jointes
-            recapForm.attachments.forEach((file, fileIndex) => {
-                formData.append(`recap_forms[${index}][attachments][${fileIndex}]`, file);
-            });
-        });
-
-        // Afficher les données pour débogage
-        console.log('FormData envoyée:', {
-            payment_request_id: paymentRequestId || editData.id,
-            recap_forms: recapForms.map(form => ({
-                activite: form.activite,
-                montant_presente_total: form.montant_presente_total,
-                montant_presente_eligible: form.montant_presente_eligible,
-                montant_sollicite: form.montant_sollicite,
-                attachments: form.attachments.map(file => file.name),
-            }))
-        });
-
-        // Envoyer les données au backend
-        fetch('/api/recap-forms', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'Accept': 'application/json',
-                
-            },
-        })
-            .then((response) => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    return response.json().then((errorData) => {
-                        throw new Error(errorData.message || 'Une erreur est survenue');
-                    });
+            recapForms.forEach((form, index) => {
+                if (form.id) {
+                    formData.append(`recap_forms[${index}][id]`, form.id);
                 }
-            })
-            .then((data) => {
-                
-                alert('Formulaires récapitulatifs soumis avec succès');
-                onClose();
-            })
-            .catch((error) => {
-               
-                console.error('Erreur lors de la soumission des formulaires récapitulatifs:', error);
-                alert(
-                    'Erreur lors de la soumission des formulaires récapitulatifs: ' + error.message
-                );
+                formData.append(`recap_forms[${index}][activite]`, form.activite);
+                formData.append(`recap_forms[${index}][montant_presente_total]`, form.montantPresenteTotal);
+                formData.append(`recap_forms[${index}][montant_presente_eligible]`, form.montantPresenteEligible);
+                formData.append(`recap_forms[${index}][montant_sollicite]`, form.montantSollicite);
+
+                // Ajouter uniquement les nouvelles pièces jointes
+                form.newAttachments.forEach((file) => {
+                    formData.append(`recap_forms[${index}][attachments][]`, file);
+                });
             });
+
+            // Déterminer la méthode et l'URL en fonction du mode (création ou modification)
+            const method = editData ? 'patch' : 'post';
+            const url = editData ? `/api/payment-requests/${editData.id}` : '/api/payment-requests';
+
+            console.log('Méthode:', method);
+            console.log('URL:', url);
+
+            console.log('Données envoyées:', Array.from(formData.entries())); // Log pour débogage
+
+            const response = await axios({
+                method: method,
+                url: url,
+                data: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    // 'Content-Type': 'multipart/form-data', // Retirer ce header pour laisser Axios le gérer
+                },
+            });
+
+            setSuccessMessage(editData ? 'Demande de paiement mise à jour avec succès.' : 'Demande de paiement créée avec succès.');
+            onClose();
+        } catch (error) {
+            console.error('Erreur lors de la soumission du formulaire:', error);
+            if (editData) {
+                // Gestion des erreurs lors de la mise à jour
+                if (error.response && error.response.data && error.response.data.errors) {
+                    const errorMessages = Object.values(error.response.data.errors).flat().join('\n');
+                    setErrorMessage('Erreur lors de la mise à jour de la demande de paiement:\n' + errorMessages);
+                } else {
+                    setErrorMessage('Erreur lors de la mise à jour de la demande de paiement: ' + error.message);
+                }
+            } else {
+                // Gestion des erreurs lors de la création
+                if (error.response && error.response.data && error.response.data.errors) {
+                    const errorMessages = Object.values(error.response.data.errors).flat().join('\n');
+                    setErrorMessage('Erreur lors de la soumission du formulaire:\n' + errorMessages);
+                } else {
+                    setErrorMessage('Erreur lors de la soumission du formulaire: ' + error.message);
+                }
+            }
+        }
     };
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-h-screen overflow-y-auto">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold">
+            <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-lg max-h-[80vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-3">
+                    <h2 className="text-xl font-bold">
                         {editData ? 'Modifier Demande de Paiement' : 'Ajouter Demande de Paiement'}
                     </h2>
                     <button onClick={onClose} className="text-gray-600 hover:text-gray-800">
                         <FaTimes size={20} />
                     </button>
                 </div>
-                {currentStep === 1 ? (
-                    // Formulaire principal
-                    <form>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Nom du projet</label>
-                            <Select
-                                value={selectedProject}
-                                onChange={setSelectedProject}
-                                options={projectsOptions}
-                                placeholder="Sélectionner un projet"
-                                className="w-full"
-                                isRequired
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Intitulé de l'opération</label>
-                            <input
-                                type="text"
-                                value={operation}
-                                onChange={(e) => setOperation(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                                placeholder="Frais de communication"
-                                required
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Bénéficiaire</label>
-                            <input
-                                type="text"
-                                value={beneficiary}
-                                onChange={(e) => setBeneficiary(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                                placeholder="MOOV BENIN"
-                                required
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Numéro et date de la facture</label>
-                            <input
-                                type="text"
-                                value={invoiceDetails}
-                                onChange={(e) => setInvoiceDetails(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                                placeholder="EM100234-23 du 12/10/2024"
-                                required
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Ligne Budgétaire</label>
-                            <input
-                                type="text"
-                                value={budgetLine}
-                                onChange={(e) => setBudgetLine(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                                placeholder="Dotation en communication staff projet, Octobre 2024"
-                                required
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Affaire suivie par</label>
-                            <Select
-                                value={followedBy}
-                                onChange={setFollowedBy}
-                                options={usersOptions}
-                                placeholder="Sélectionner l'utilisateur qui suit"
-                                className="w-full"
-                                isClearable
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Qualité</label>
-                            <input
-                                type="text"
-                                value={quality}
-                                onChange={(e) => setQuality(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                                placeholder="Entrez la qualité"
-                            />
-                        </div>
-                        <div className="flex justify-between mt-6">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg"
-                            >
-                                Annuler
-                            </button>
-                            <div className="flex space-x-2">
-                                {/* Bouton "Ajouter" ou "Mettre à jour" selon le mode */}
-                                <button
-                                    type="button"
-                                    onClick={handleAddOrUpdate}
-                                    className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg"
-                                >
-                                    {editData ? 'Mettre à jour' : 'Ajouter'}
-                                </button>
-                                {/* Bouton "Suivant" */}
-                                <button
-                                    type="button"
-                                    onClick={handleNext}
-                                    className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
-                                >
-                                    Suivant
-                                </button>
+                {successMessage && <SuccessAlert message={successMessage} onClose={closeSuccessAlert} />}
+                {errorMessage && <ErrorAlert message={errorMessage} onClose={closeErrorAlert} />}
+                <form onSubmit={handleSubmit}>
+                    {/* Formulaire principal */}
+                    <div className="mb-3">
+                        <label className="block text-gray-700 font-medium mb-1">Nom du projet</label>
+                        <Select
+                            value={selectedProject}
+                            onChange={setSelectedProject}
+                            options={projectsOptions}
+                            placeholder="Sélectionner un projet"
+                            className="w-full"
+                            isRequired
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="block text-gray-700 font-medium mb-1">Numéro d'Ordre</label>
+                        <input
+                            type="text"
+                            value={orderNumber}
+                            onChange={(e) => setOrderNumber(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="ORD-1234567890"
+                            required
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="block text-gray-700 font-medium mb-1">Intitulé de l'opération</label>
+                        <input
+                            type="text"
+                            value={operation}
+                            onChange={(e) => setOperation(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="Frais de communication"
+                            required
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="block text-gray-700 font-medium mb-1">Bénéficiaire</label>
+                        <input
+                            type="text"
+                            value={beneficiary}
+                            onChange={(e) => setBeneficiary(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="MOOV BENIN"
+                            required
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="block text-gray-700 font-medium mb-1">Numéro et date de la facture</label>
+                        <input
+                            type="text"
+                            value={invoiceDetails}
+                            onChange={(e) => setInvoiceDetails(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="EM100234-23 du 12/10/2024"
+                            required
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="block text-gray-700 font-medium mb-1">Ligne Budgétaire</label>
+                        <input
+                            type="text"
+                            value={budgetLine}
+                            onChange={(e) => setBudgetLine(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="Dotation en communication staff projet, Octobre 2024"
+                            required
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="block text-gray-700 font-medium mb-1">Affaire suivie par</label>
+                        <Select
+                            value={followedBy}
+                            onChange={setFollowedBy}
+                            options={usersOptions}
+                            placeholder="Sélectionner l'utilisateur qui suit"
+                            className="w-full"
+                            isClearable
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="block text-gray-700 font-medium mb-1">Qualité</label>
+                        <input
+                            type="text"
+                            value={quality}
+                            onChange={(e) => setQuality(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="Entrez la qualité"
+                        />
+                    </div>
+
+                    {/* Formulaires récapitulatifs */}
+                    <div className="mb-3">
+                        <h3 className="text-lg font-semibold mb-2">Formulaires Récapitulatifs</h3>
+                        {recapForms.map((form, index) => (
+                            <div key={index} className="border border-gray-300 p-3 rounded mb-3 relative">
+                                {recapForms.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveRecapForm(index)}
+                                        className="absolute top-1 right-1 text-red-500 hover:text-red-700"
+                                    >
+                                        <FaTimes />
+                                    </button>
+                                )}
+                                <h4 className="text-md font-medium mb-1">Formulaire {index + 1}</h4>
+                                <div className="mb-2">
+                                    <label className="block text-gray-700 font-medium mb-0.5">Activité</label>
+                                    <input
+                                        type="text"
+                                        value={form.activite}
+                                        onChange={(e) => handleRecapFormChange(index, 'activite', e.target.value)}
+                                        className="w-full border border-gray-300 rounded px-3 py-1.5"
+                                        placeholder="Description de l'activité"
+                                        required
+                                    />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block text-gray-700 font-medium mb-0.5">Montant présenté (en coût total)</label>
+                                    <input
+                                        type="number"
+                                        value={form.montantPresenteTotal}
+                                        onChange={(e) => handleRecapFormChange(index, 'montantPresenteTotal', e.target.value)}
+                                        className="w-full border border-gray-300 rounded px-3 py-1.5"
+                                        placeholder="Montant total"
+                                        required
+                                    />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block text-gray-700 font-medium mb-0.5">Montant présenté (en coût total éligible)</label>
+                                    <input
+                                        type="number"
+                                        value={form.montantPresenteEligible}
+                                        onChange={(e) => handleRecapFormChange(index, 'montantPresenteEligible', e.target.value)}
+                                        className="w-full border border-gray-300 rounded px-3 py-1.5"
+                                        placeholder="Montant éligible"
+                                        required
+                                    />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block text-gray-700 font-medium mb-0.5">Montant sollicité (A-B)</label>
+                                    <input
+                                        type="number"
+                                        value={form.montantSollicite}
+                                        onChange={(e) => handleRecapFormChange(index, 'montantSollicite', e.target.value)}
+                                        className="w-full border border-gray-300 rounded px-3 py-1.5"
+                                        placeholder="Montant sollicité"
+                                        required
+                                    />
+                                </div>
+                                <div className="mb-2">
+                                    <label className="block text-gray-700 font-medium mb-0.5">Pièces jointes</label>
+                                    
+                                    {/* Afficher les pièces jointes existantes */}
+                                    {form.attachments.length > 0 && (
+                                        <ul className="mt-1 list-disc list-inside">
+                                            {form.attachments.map((file, idx) => (
+                                                <li key={idx}>
+                                                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                                                        {file.fileName} {/* Utiliser camelCase */}
+                                                    </a>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept=".pdf, .jpg, .jpeg, .png, .doc, .docx"
+                                        onChange={(e) => handleFileChange(index, e.target.files)}
+                                        className="w-full border border-gray-300 rounded px-3 py-1.5 mt-1"
+                                    />
+                                    
+                                    {/* Afficher les nouvelles pièces jointes */}
+                                    {form.newAttachments.length > 0 && (
+                                        <ul className="mt-1 list-disc list-inside">
+                                            {form.newAttachments.map((file, idx) => (
+                                                <li key={idx}>
+                                                    {file instanceof File ? (
+                                                        file.name
+                                                    ) : (
+                                                        <a href={file.url} target="_blank" rel="noopener noreferrer">
+                                                            {file.fileName}
+                                                        </a>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    </form>
-                ) : (
-                    // Formulaire récapitulatif
-                    <form>
-                        {currentRecapForm === 1 && (
-                            <div className="mb-4">
-                                <label className="block text-gray-700 font-medium mb-2">Nombre de formulaires récapitulatifs</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={recapCount}
-                                    onChange={handleRecapCountChange}
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                                    placeholder="Nombre de formulaires récapitulatifs"
-                                />
-                            </div>
-                        )}
-                        <h3 className="text-lg font-semibold mb-2">Formulaire Récapitulatif {currentRecapForm} / {recapCount}</h3>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Activité</label>
-                            <input
-                                type="text"
-                                value={recapForms[currentRecapForm - 1]?.activite || ''}
-                                onChange={(e) => handleRecapFormChange(currentRecapForm - 1, 'activite', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                                placeholder="Description de l'activité"
-                                required
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Montant présenté (en coût total)</label>
-                            <input
-                                type="number"
-                                value={recapForms[currentRecapForm - 1]?.montant_presente_total || ''}
-                                onChange={(e) => handleRecapFormChange(currentRecapForm - 1, 'montant_presente_total', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                                placeholder="Montant total"
-                                required
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Montant présenté (en coût total éligible)</label>
-                            <input
-                                type="number"
-                                value={recapForms[currentRecapForm - 1]?.montant_presente_eligible || ''}
-                                onChange={(e) => handleRecapFormChange(currentRecapForm - 1, 'montant_presente_eligible', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                                placeholder="Montant éligible"
-                                required
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Montant sollicité (A-B)</label>
-                            <input
-                                type="number"
-                                value={recapForms[currentRecapForm - 1]?.montant_sollicite || ''}
-                                onChange={(e) => handleRecapFormChange(currentRecapForm - 1, 'montant_sollicite', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                                placeholder="Montant sollicité"
-                                required
-                            />
-                        </div>
-                        <div className="mb-4">
-                            <label className="block text-gray-700 font-medium mb-2">Pièces jointes</label>
-                            <input
-                                type="file"
-                                multiple
-                                accept=".pdf, .jpg, .jpeg, .png, .doc, .docx"
-                                onChange={(e) => handleFileChange(currentRecapForm - 1, e.target.files)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                            />
-                        </div>
-                        <div className="flex justify-between">
-                            <button
-                                type="button"
-                                onClick={handlePrevious}
-                                className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg"
-                            >
-                                Précédent
-                            </button>
-                            {currentRecapForm < recapCount ? (
-                                <button
-                                    type="button"
-                                    onClick={handleNext}
-                                    className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
-                                >
-                                    Suivant
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleSubmit}
-                                    type="button"
-                                    className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg"
-                                >
-                                    Soumettre
-                                </button>
-                            )}
-                        </div>
-                    </form>
-                )}
+                        ))}
+                        <button
+                            type="button"
+                            onClick={handleAddRecapForm}
+                            className="bg-blue-500 hover:bg-blue-600 text-white py-1.5 px-3 rounded"
+                        >
+                            Ajouter un formulaire récapitulatif
+                        </button>
+                    </div>
+
+                    {/* Boutons de soumission */}
+                    <div className="flex justify-between mt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="bg-red-500 hover:bg-red-600 text-white py-1.5 px-3 rounded"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            type="submit"
+                            className="bg-green-500 hover:bg-green-600 text-white py-1.5 px-3 rounded"
+                        >
+                            {editData ? 'Mettre à jour' : 'Ajouter'}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );
+
 };
 
 export default PaymentRequestForm;

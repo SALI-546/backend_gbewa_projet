@@ -1,3 +1,4 @@
+// PaymentRequestDetails.jsx
 import React, { useState, useEffect } from 'react';
 import { FaChevronLeft, FaEdit, FaSave } from 'react-icons/fa';
 import PaymentRequestForm from './PaymentRequestForm'; // Importer le formulaire
@@ -16,13 +17,12 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
                 const response = await axios.get(`/api/payment-requests/${requestId}`, {
                     headers: {
                         'Accept': 'application/json',
-                        
                     }
                 });
                 console.log('Réponse API pour PaymentRequestDetails:', response.data);
-                setPaymentRequest(response.data);
-                if (response.data.recap_forms && response.data.recap_forms.length > 0) {
-                    setRecapForms(response.data.recap_forms);
+                setPaymentRequest(response.data.data); // Utiliser data.data
+                if (response.data.data.recapForms && response.data.data.recapForms.length > 0) {
+                    setRecapForms(response.data.data.recapForms);
                 } else {
                     setRecapForms([]);
                 }
@@ -39,12 +39,12 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
         }
     }, [requestId]);
 
-   
+    // Fonction pour passer en mode édition
     const handleEditClick = () => {
         setIsEditing(true);
     };
 
-    
+    // Fonction pour fermer le formulaire après édition
     const handleCloseForm = async () => {
         setIsEditing(false);
         setLoading(true);
@@ -52,13 +52,12 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
             const response = await axios.get(`/api/payment-requests/${requestId}`, {
                 headers: {
                     'Accept': 'application/json',
-                   
                 }
             });
             console.log('Réponse API pour PaymentRequestDetails après édition:', response.data);
-            setPaymentRequest(response.data);
-            if (response.data.recap_forms && response.data.recap_forms.length > 0) {
-                setRecapForms(response.data.recap_forms);
+            setPaymentRequest(response.data.data); // Utiliser data.data
+            if (response.data.data.recapForms && response.data.data.recapForms.length > 0) {
+                setRecapForms(response.data.data.recapForms);
             } else {
                 setRecapForms([]);
             }
@@ -101,25 +100,24 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
                                 <p><strong>Objet/Activité :</strong></p>
                             </div>
                             <div className="w-1/2">
-                                <p>{new Date(paymentRequest.date).toLocaleString()}</p>
-                                <p>{paymentRequest.order_number}</p>
+                                <p>{paymentRequest.date ? new Date(paymentRequest.date).toLocaleString() : '-'}</p> {/* Gestion de la date */}
+                                <p>{paymentRequest.orderNumber}</p> {/* Utiliser camelCase */}
                                 <p>{paymentRequest.operation}</p>
                                 <p>{paymentRequest.beneficiary}</p>
-                                <p>{paymentRequest.invoice_details}</p>
-                                <p>{paymentRequest.activite || paymentRequest.budget_line}</p> 
+                                <p>{paymentRequest.invoiceDetails}</p>
+                                <p>{paymentRequest.recapForms && paymentRequest.recapForms.length > 0 ? paymentRequest.recapForms[0].activite : paymentRequest.budgetLine}</p> {/* Ajustement selon les données */}
                             </div>
                         </div>
                         <div className="flex">
                             <div className="w-1/2">
                                 <p><strong>Affaire suivie par :</strong></p>
                                 <p><strong>Qualité :</strong></p>
-                              
                                 <p><strong>Mail :</strong></p>
                             </div>
                             <div className="w-1/2">
-                            <p>{paymentRequest.followed_by?.name}</p>
-                                <p>{paymentRequest.quality}</p>
-                                <p>{paymentRequest.followed_by?.email || '-'}</p> {/* Accès correct à l'email */}
+                                <p>{paymentRequest.followedBy?.name || '-'}</p>
+                                <p>{paymentRequest.quality || '-'}</p>
+                                <p>{paymentRequest.followedBy?.email || '-'}</p> {/* Accès correct à l'email */}
                             </div>
                         </div>
                     </div>
@@ -143,9 +141,9 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
                                     <tr key={form.id || index} className="text-center border-t border-gray-300 hover:bg-gray-50">
                                         <td className="py-2 px-4 border border-gray-300">{String(index + 1).padStart(2, '0')}</td>
                                         <td className="py-2 px-4 border border-gray-300">{form.activite}</td>
-                                        <td className="py-2 px-4 border border-gray-300">{Number(form.montant_presente_total).toLocaleString('fr-FR')} FCFA</td>
-                                        <td className="py-2 px-4 border border-gray-300">{Number(form.montant_presente_eligible).toLocaleString('fr-FR')} FCFA</td>
-                                        <td className="py-2 px-4 border border-gray-300">{Number(form.montant_sollicite).toLocaleString('fr-FR')} FCFA</td>
+                                        <td className="py-2 px-4 border border-gray-300">{Number(form.montantPresenteTotal).toLocaleString('fr-FR')} FCFA</td> {/* Utiliser camelCase */}
+                                        <td className="py-2 px-4 border border-gray-300">{Number(form.montantPresenteEligible).toLocaleString('fr-FR')} FCFA</td> {/* Utiliser camelCase */}
+                                        <td className="py-2 px-4 border border-gray-300">{Number(form.montantSollicite).toLocaleString('fr-FR')} FCFA</td> {/* Utiliser camelCase */}
                                         <td className="py-2 px-4 border border-gray-300">
                                             {form.attachments && form.attachments.length > 0 ? (
                                                 <ul className="list-disc list-inside">
@@ -157,7 +155,7 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
                                                                 rel="noopener noreferrer"
                                                                 className="text-blue-500 hover:underline"
                                                             >
-                                                                {file.file_name}
+                                                                {file.fileName} {/* Utiliser camelCase */}
                                                             </a>
                                                         </li>
                                                     ))}
@@ -180,13 +178,13 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
                                 <tr className="text-center border-t border-gray-300 hover:bg-gray-50 font-bold">
                                     <td className="py-2 px-4 border border-gray-300" colSpan="2">TOTAL DEMANDE</td>
                                     <td className="py-2 px-4 border border-gray-300">
-                                        {recapForms.reduce((acc, form) => acc + Number(form.montant_presente_total || 0), 0).toLocaleString('fr-FR')} FCFA
+                                        {recapForms.reduce((acc, form) => acc + Number(form.montantPresenteTotal || 0), 0).toLocaleString('fr-FR')} FCFA
                                     </td>
                                     <td className="py-2 px-4 border border-gray-300">
-                                        {recapForms.reduce((acc, form) => acc + Number(form.montant_presente_eligible || 0), 0).toLocaleString('fr-FR')} FCFA
+                                        {recapForms.reduce((acc, form) => acc + Number(form.montantPresenteEligible || 0), 0).toLocaleString('fr-FR')} FCFA
                                     </td>
                                     <td className="py-2 px-4 border border-gray-300">
-                                        {recapForms.reduce((acc, form) => acc + Number(form.montant_sollicite || 0), 0).toLocaleString('fr-FR')} FCFA
+                                        {recapForms.reduce((acc, form) => acc + Number(form.montantSollicite || 0), 0).toLocaleString('fr-FR')} FCFA
                                     </td>
                                     <td className="py-2 px-4 border border-gray-300"></td>
                                 </tr>
@@ -197,14 +195,14 @@ const PaymentRequestDetails = ({ requestId, onClose }) => {
                     {/* Texte final */}
                     <p className="mt-4 text-gray-600">
                         Arrêté la présente demande de paiement à la somme totale de{' '}
-                        {recapForms.reduce((acc, form) => acc + Number(form.montant_sollicite || 0), 0).toLocaleString('fr-FR')} FCFA.
+                        {recapForms.reduce((acc, form) => acc + Number(form.montantSollicite || 0), 0).toLocaleString('fr-FR')} FCFA.
                         Je certifie exactes les informations mentionnées dans la présente demande de paiement.
                     </p>
 
                     {/* Informations supplémentaires et boutons */}
                     <div className="mt-6">
                         <p className="text-gray-600 mb-2">Le chargé de Logistique</p>
-                        <p className="text-gray-600">{paymentRequest.followed_by?.name}</p>
+                        <p className="text-gray-600">{paymentRequest.followedBy?.name || '-'}</p>
                         <div className="flex justify-end space-x-4 mt-4">
                             <button
                                 type="button"

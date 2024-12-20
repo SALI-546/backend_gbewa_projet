@@ -10,9 +10,7 @@ const BudgetTrackingForm = ({ onClose, engagementId, existingData }) => {
         old_balance: '',
         new_balance: '',
         fournisseurs_prestataire: '',
-        avis: '',
         moyens_de_paiement: '',
-        signature: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -26,9 +24,7 @@ const BudgetTrackingForm = ({ onClose, engagementId, existingData }) => {
                 old_balance: existingData.old_balance || '',
                 new_balance: existingData.new_balance || '',
                 fournisseurs_prestataire: existingData.fournisseurs_prestataire || '',
-                avis: existingData.avis || '',
                 moyens_de_paiement: existingData.moyens_de_paiement || '',
-                signature: existingData.signature || '',
             });
         }
     }, [existingData]);
@@ -174,35 +170,6 @@ const BudgetTrackingForm = ({ onClose, engagementId, existingData }) => {
                         />
                     </div>
 
-                    {/* Section Avis */}
-                    <div className="space-y-2 mt-4">
-                        <label className="block font-medium mb-1">Avis</label>
-                        <div className="flex flex-col sm:flex-row sm:space-x-4">
-                            <label className="flex items-center space-x-2 mb-2 sm:mb-0">
-                                <input
-                                    type="radio"
-                                    name="avis"
-                                    value="Favorable"
-                                    checked={formData.avis === 'Favorable'}
-                                    onChange={handleChange}
-                                    className="form-radio text-green-500"
-                                />
-                                <span>Favorable</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                                <input
-                                    type="radio"
-                                    name="avis"
-                                    value="Défavorable"
-                                    checked={formData.avis === 'Défavorable'}
-                                    onChange={handleChange}
-                                    className="form-radio text-green-500"
-                                />
-                                <span>Défavorable</span>
-                            </label>
-                        </div>
-                    </div>
-
                     {/* Section Moyens de paiement */}
                     <div className="space-y-2 mt-4">
                         <label className="block font-medium mb-1">Moyens de paiement</label>
@@ -243,57 +210,6 @@ const BudgetTrackingForm = ({ onClose, engagementId, existingData }) => {
                         </div>
                     </div>
 
-                    {/* Section Signature */}
-                    <div className="space-y-2 mt-4">
-                        <label className="block font-medium mb-1">Signature</label>
-                        <div className="flex flex-wrap gap-4">
-                            <label className="flex items-center space-x-2">
-                                <input
-                                    type="radio"
-                                    name="signature"
-                                    value="Visa Comptable"
-                                    checked={formData.signature === 'Visa Comptable'}
-                                    onChange={handleChange}
-                                    className="form-radio text-green-500"
-                                />
-                                <span>Visa Comptable</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                                <input
-                                    type="radio"
-                                    name="signature"
-                                    value="Visa Chef Comptable"
-                                    checked={formData.signature === 'Visa Chef Comptable'}
-                                    onChange={handleChange}
-                                    className="form-radio text-green-500"
-                                />
-                                <span>Visa Chef Comptable</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                                <input
-                                    type="radio"
-                                    name="signature"
-                                    value="Visa DAF"
-                                    checked={formData.signature === 'Visa DAF'}
-                                    onChange={handleChange}
-                                    className="form-radio text-green-500"
-                                />
-                                <span>Visa DAF</span>
-                            </label>
-                            <label className="flex items-center space-x-2">
-                                <input
-                                    type="radio"
-                                    name="signature"
-                                    value="Visa DE"
-                                    checked={formData.signature === 'Visa DE'}
-                                    onChange={handleChange}
-                                    className="form-radio text-green-500"
-                                />
-                                <span>Visa DE</span>
-                            </label>
-                        </div>
-                    </div>
-
                     <button
                         type="submit"
                         className={`bg-green-600 text-white py-2 px-4 rounded-lg w-full mt-6 hover:bg-green-700 transition-colors duration-200 ${
@@ -305,8 +221,8 @@ const BudgetTrackingForm = ({ onClose, engagementId, existingData }) => {
                     </button>
                 </form>
             </div>
-        </div>
-    );
-};
+            </div>
+        );
+    };
 
-export default BudgetTrackingForm;
+    export default BudgetTrackingForm;

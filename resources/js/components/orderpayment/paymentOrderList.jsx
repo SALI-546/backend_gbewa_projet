@@ -89,17 +89,10 @@ const PaymentOrderList = () => {
     };
 
     // Gérer l'ouverture du modal pour modifier un ordre de paiement
-    const handleEditClick = async (orderId) => {
-        try {
-            const response = await axios.get(`/api/payment-orders/${orderId}`);
-            const orderData = response.data;
-            console.log('Éditer l\'ordre :', orderData); // Débogage
-            setEditingOrder(orderData);
-            setShowModal(true);
-        } catch (error) {
-            console.error('Erreur lors de la récupération de l\'ordre de paiement :', error);
-            alert('Impossible de récupérer les détails de l\'ordre de paiement.');
-        }
+    const handleEditClick = (order) => {
+        console.log('Éditer l\'ordre :', order); // Débogage
+        setEditingOrder(order);
+        setShowModal(true);
     };
 
     // Gérer l'ouverture des détails d'un ordre de paiement
@@ -212,7 +205,7 @@ const PaymentOrderList = () => {
                                         {order.project?.name || order.project?.title || 'Non défini'}
                                     </td>
                                     <td className="py-2 px-4 border border-gray-300 text-gray-800">
-                                        {order.orderNumber}
+                                    {order.orderNumber}
                                     </td>
                                     <td className="py-2 px-4 border border-gray-300 flex justify-center space-x-4">
                                         <button
@@ -222,7 +215,7 @@ const PaymentOrderList = () => {
                                             <FaEye size={18} />
                                         </button>
                                         <button
-                                            onClick={() => handleEditClick(order.id)}
+                                            onClick={() => handleEditClick(order)}
                                             className="text-gray-600 hover:text-black focus:outline-none"
                                         >
                                             <FaEdit size={18} />
@@ -253,11 +246,6 @@ const PaymentOrderList = () => {
                     isVisible={showModal}
                     onClose={closeModal}
                     editData={editingOrder} 
-                    onSuccess={() => {
-                        closeModal();
-                        // Vous pouvez implémenter une re-fetch de la liste ici si nécessaire
-                        // Par exemple, en utilisant un état supplémentaire ou un useEffect avec une dépendance
-                    }}
                 />
             )}
 
@@ -270,6 +258,5 @@ const PaymentOrderList = () => {
             )}
         </>
     );
-    }
-
-    export default PaymentOrderList;
+}
+export default PaymentOrderList;

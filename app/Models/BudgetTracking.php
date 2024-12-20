@@ -18,14 +18,27 @@ class BudgetTracking extends Model
         'old_balance',
         'new_balance',
         'fournisseurs_prestataire',
-        'avis',
         'moyens_de_paiement',
-        'signature',
+        
+    ];
+
+    protected $casts = [
+        'amount_allocated' => 'float',
+        'amount_spent' => 'float',
+        'amount_approved' => 'float',
+        'old_balance' => 'float',
+        'new_balance' => 'float',
+        'moyens_de_paiement' => 'string',
     ];
 
     // Relation avec Engagement
     public function engagement()
     {
         return $this->belongsTo(Engagement::class);
+    }
+
+    public function approvals()
+    {
+        return $this->hasMany(BudgetTrackingApproval::class);
     }
 }

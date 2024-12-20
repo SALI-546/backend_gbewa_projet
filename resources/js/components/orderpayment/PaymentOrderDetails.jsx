@@ -1,5 +1,3 @@
-// PaymentOrderDetails.jsx
-
 import React, { useState, useEffect, useRef } from 'react';
 import { FaChevronLeft } from 'react-icons/fa';
 import SignatureCanvas from 'react-signature-canvas';
@@ -32,30 +30,7 @@ const PaymentOrderDetails = ({ isVisible, order, onClose }) => {
             position: 'Le Directeur Exécutif',
             name: 'AHOLOU G. Minhoumon',
         },
-        {
-            role: 'visa_comptable',
-            title: 'VISA COMPTABLE',
-            position: 'Le Comptable',
-            name: 'Nom du Comptable',
-        },
-        {
-            role: 'visa_chef_comptable',
-            title: 'VISA CHEF COMPTABLE',
-            position: 'Le Chef Comptable',
-            name: 'Nom du Chef Comptable',
-        },
-        {
-            role: 'visa_daf',
-            title: 'VISA DAF',
-            position: 'Le DAF',
-            name: 'Nom du DAF',
-        },
-        {
-            role: 'visa_de',
-            title: 'VISA DE',
-            position: 'Le Directeur Exécutif',
-            name: 'Nom du Directeur Exécutif',
-        },
+        
     ];
 
     // État pour les signatures existantes
@@ -141,8 +116,8 @@ const PaymentOrderDetails = ({ isVisible, order, onClose }) => {
     const totalGeneral = totalDemande;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg p-6 w-4/5 max-w-5xl overflow-auto max-h-screen">
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg p-6 w-4/5 max-w-5xl max-h-[90vh] overflow-auto">
                 <div className="flex justify-between items-center mb-4">
                     {/* Bouton retour */}
                     <button onClick={onClose} className="flex items-center text-gray-600 hover:text-black">
@@ -244,77 +219,78 @@ const PaymentOrderDetails = ({ isVisible, order, onClose }) => {
 
                 {/* Table des Signatures */}
                 <div className="mt-8">
-                    <h2 className="text-2xl font-bold mb-4">Signatures</h2>
-                    <table className="min-w-full bg-white border border-gray-300 rounded-lg">
-                        <thead>
-                            <tr>
-                                <th className="py-2 px-4 bg-gray-100 text-center font-medium text-gray-600 border border-gray-300">Rôle</th>
-                                <th className="py-2 px-4 bg-gray-100 text-center font-medium text-gray-600 border border-gray-300">Nom</th>
-                                <th className="py-2 px-4 bg-gray-100 text-center font-medium text-gray-600 border border-gray-300">Signature</th>
-                                <th className="py-2 px-4 bg-gray-100 text-center font-medium text-gray-600 border border-gray-300">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {signatureRoles.map((signatureRole) => {
-                                const existingSignature = existingSignatures[signatureRole.role];
-                                return (
-                                    <tr key={signatureRole.role} className="text-center border-t border-gray-300 hover:bg-gray-50">
-                                        <td className="py-2 px-4 border border-gray-300">{signatureRole.title}</td>
-                                        <td className="py-2 px-4 border border-gray-300">{signatureRole.name}</td>
-                                        <td className="py-2 px-4 border border-gray-300">
-                                            {existingSignature ? (
-                                                <div className="flex flex-col items-center">
-                                                    <img 
-                                                        src={existingSignature.signatureUrl} 
-                                                        alt={`${signatureRole.role} signature`} 
-                                                        className="w-40 h-20 border"
-                                                    />
-                                                    <p className="mt-2">{`Signé le : ${new Date(existingSignature.signedAt).toLocaleDateString()}`}</p>
-                                                </div>
-                                            ) : (
-                                                <div>
-                                                    <SignatureCanvas 
-                                                        ref={signaturePads[signatureRole.role]}
-                                                        penColor="black"
-                                                        canvasProps={{ width: 300, height: 100, className: 'signature-canvas border rounded' }}
-                                                    />
-                                                    <div className="mt-2 flex space-x-2">
-                                                        <button
-                                                            onClick={() => handleSaveSignature(signatureRole.role)}
-                                                            className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded"
-                                                        >
-                                                            Sauvegarder
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleClearSignature(signatureRole.role)}
-                                                            className="bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded"
-                                                        >
-                                                            Effacer
-                                                        </button>
+                    <h2 className="text-2xl font-bold mb-4 text-center">Signatures</h2>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full bg-white border border-gray-300 rounded-lg">
+                            <thead>
+                                <tr>
+                                    <th className="py-2 px-4 bg-gray-100 text-center font-medium text-gray-600 border border-gray-300">Rôle</th>
+                                    <th className="py-2 px-4 bg-gray-100 text-center font-medium text-gray-600 border border-gray-300">Nom</th>
+                                    <th className="py-2 px-4 bg-gray-100 text-center font-medium text-gray-600 border border-gray-300">Signature</th>
+                                    <th className="py-2 px-4 bg-gray-100 text-center font-medium text-gray-600 border border-gray-300">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {signatureRoles.map((signatureRole) => {
+                                    const existingSignature = existingSignatures[signatureRole.role];
+                                    return (
+                                        <tr key={signatureRole.role} className="text-center border-t border-gray-300 hover:bg-gray-50">
+                                            <td className="py-2 px-4 border border-gray-300">{signatureRole.title}</td>
+                                            <td className="py-2 px-4 border border-gray-300">{signatureRole.name}</td>
+                                            <td className="py-2 px-4 border border-gray-300">
+                                                {existingSignature ? (
+                                                    <div className="flex flex-col items-center">
+                                                        <img 
+                                                            src={existingSignature.signatureUrl} 
+                                                            alt={`${signatureRole.role} signature`} 
+                                                            className="w-40 h-20 border"
+                                                        />
+                                                        <p className="mt-2">{`Signé le : ${new Date(existingSignature.signedAt).toLocaleDateString()}`}</p>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="py-2 px-4 border border-gray-300">
-                                            {existingSignature && (
-                                                <button
-                                                    onClick={() => window.open(existingSignature.signatureUrl, '_blank')}
-                                                    className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded"
-                                                >
-                                                    Voir
-                                                </button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                                ) : (
+                                                    <div>
+                                                        <SignatureCanvas 
+                                                            ref={signaturePads[signatureRole.role]}
+                                                            penColor="black"
+                                                            canvasProps={{ width: 200, height: 80, className: 'signature-canvas border rounded' }}
+                                                        />
+                                                        <div className="mt-2 flex space-x-2 justify-center">
+                                                            <button
+                                                                onClick={() => handleSaveSignature(signatureRole.role)}
+                                                                className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-sm"
+                                                            >
+                                                                Sauvegarder
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleClearSignature(signatureRole.role)}
+                                                                className="bg-gray-500 hover:bg-gray-600 text-white py-1 px-3 rounded text-sm"
+                                                            >
+                                                                Effacer
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="py-2 px-4 border border-gray-300">
+                                                {existingSignature && (
+                                                    <button
+                                                        onClick={() => window.open(existingSignature.signatureUrl, '_blank')}
+                                                        className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded text-sm"
+                                                    >
+                                                        Voir
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-
             </div>
         </div>
-    ); 
+    );
 }
 
 export default PaymentOrderDetails;

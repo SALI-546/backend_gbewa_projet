@@ -81,7 +81,7 @@ class PaymentOrderController extends Controller
     
         return response()->json($paymentOrders);
     }
-    
+
 
     /**
      * Créer un nouvel ordre de paiement.
@@ -90,6 +90,7 @@ class PaymentOrderController extends Controller
     {
         $validated = $request->validate([
             'project_id' => 'required|exists:projects,id',
+            'order_number' => 'required|string|max:255|unique:payment_orders,order_number', // Validation pour le numéro d'ordre
             'account' => 'required|string|max:255',
             'title' => 'required|string|max:255',
             'invoice_number' => 'required|string|max:255|unique:payment_orders,invoice_number',
@@ -97,12 +98,10 @@ class PaymentOrderController extends Controller
         ]);
 
         try {
-            // Générer un order_number unique, par exemple en utilisant un préfixe et une chaîne aléatoire
-            $orderNumber = 'PO-' . strtoupper(Str::random(10));
-
+            // Utiliser le numéro d'ordre fourni par l'utilisateur
             $paymentOrder = PaymentOrder::create([
                 'project_id' => $validated['project_id'],
-                'order_number' => $orderNumber, // Ajout du order_number généré
+                'order_number' => $validated['order_number'], // Utilisation du numéro d'ordre fourni
                 'account' => $validated['account'],
                 'title' => $validated['title'],
                 'invoice_number' => $validated['invoice_number'],
@@ -140,50 +139,50 @@ class PaymentOrderController extends Controller
      * Afficher un ordre de paiement spécifique.
      */
     public function show($id)
-{
-    $paymentOrder = PaymentOrder::with('project', 'recapForms.attachments', 'signatures')->findOrFail($id);
+    {
+        $paymentOrder = PaymentOrder::with('project', 'recapForms.attachments', 'signatures')->findOrFail($id);
 
-    // Transformer les données pour utiliser camelCase
-    $paymentOrderTransformed = [
-        'id' => $paymentOrder->id,
-        'project' => $paymentOrder->project,
-        'orderNumber' => $paymentOrder->order_number,
-        'account' => $paymentOrder->account,
-        'title' => $paymentOrder->title,
-        'invoiceNumber' => $paymentOrder->invoice_number,
-        'billOfLadingNumber' => $paymentOrder->bill_of_lading_number,
-        'recapForms' => $paymentOrder->recapForms->map(function($form) {
-            return [
-                'id' => $form->id,
-                'beneficiaire' => $form->beneficiaire,
-                'montant' => $form->montant,
-                'objetDepense' => $form->objet_depense,
-                'ligneBudgetaire' => $form->ligne_budgetaire,
-                'piecesJointes' => $form->attachments->map(function($attachment) {
-                    return [
-                        'id' => $attachment->id,
-                        'filePath' => $attachment->file_path,
-                        'fileName' => $attachment->file_name,
-                        'url' => $attachment->url, 
-                    ];
-                }),
-            ];
-        }),
-        'signatures' => $paymentOrder->signatures->map(function($signature) {
-            return [
-                'id' => $signature->id,
-                'role' => $signature->role,
-                'name' => $signature->name,
-                'signatureUrl' => $signature->url,
-                'signedAt' => $signature->signed_at,
-            ];
-        }),
-        'createdAt' => $paymentOrder->created_at,
-        // Ajoutez d'autres champs si nécessaire
-    ];
+        // Transformer les données pour utiliser camelCase
+        $paymentOrderTransformed = [
+            'id' => $paymentOrder->id,
+            'project' => $paymentOrder->project,
+            'orderNumber' => $paymentOrder->order_number,
+            'account' => $paymentOrder->account,
+            'title' => $paymentOrder->title,
+            'invoiceNumber' => $paymentOrder->invoice_number,
+            'billOfLadingNumber' => $paymentOrder->bill_of_lading_number,
+            'recapForms' => $paymentOrder->recapForms->map(function($form) {
+                return [
+                    'id' => $form->id,
+                    'beneficiaire' => $form->beneficiaire,
+                    'montant' => $form->montant,
+                    'objetDepense' => $form->objet_depense,
+                    'ligneBudgetaire' => $form->ligne_budgetaire,
+                    'piecesJointes' => $form->attachments->map(function($attachment) {
+                        return [
+                            'id' => $attachment->id,
+                            'filePath' => $attachment->file_path,
+                            'fileName' => $attachment->file_name,
+                            'url' => $attachment->url, 
+                        ];
+                    }),
+                ];
+            }),
+            'signatures' => $paymentOrder->signatures->map(function($signature) {
+                return [
+                    'id' => $signature->id,
+                    'role' => $signature->role,
+                    'name' => $signature->name,
+                    'signatureUrl' => $signature->url,
+                    'signedAt' => $signature->signed_at,
+                ];
+            }),
+            'createdAt' => $paymentOrder->created_at,
+            // Ajoutez d'autres champs si nécessaire
+        ];
 
-    return response()->json($paymentOrderTransformed);
-}
+        return response()->json($paymentOrderTransformed);
+    }
 
     /**
      * Mettre à jour un ordre de paiement existant.
@@ -194,6 +193,7 @@ class PaymentOrderController extends Controller
 
         $validated = $request->validate([
             'project_id' => 'required|exists:projects,id',
+            'order_number' => 'required|string|max:255|unique:payment_orders,order_number,' . $id, // Validation pour le numéro d'ordre
             'account' => 'required|string|max:255',
             'title' => 'required|string|max:255',
             'invoice_number' => 'required|string|max:255|unique:payment_orders,invoice_number,' . $id,
@@ -203,6 +203,7 @@ class PaymentOrderController extends Controller
         try {
             $paymentOrder->update([
                 'project_id' => $validated['project_id'],
+                'order_number' => $validated['order_number'], // Mise à jour du numéro d'ordre
                 'account' => $validated['account'],
                 'title' => $validated['title'],
                 'invoice_number' => $validated['invoice_number'],

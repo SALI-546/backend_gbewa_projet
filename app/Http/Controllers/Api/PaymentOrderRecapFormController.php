@@ -35,7 +35,7 @@ class PaymentOrderRecapFormController extends Controller
                             'id' => $attachment->id,
                             'filePath' => $attachment->file_path,
                             'fileName' => $attachment->file_name,
-                            'url' => $attachment->url, // Assurez-vous que 'url' est défini via l'accessor
+                             'url' => $attachment->url, // Assurez-vous que 'url' est défini via l'accessor
                         ];
                     }),
                 ];
@@ -49,7 +49,7 @@ class PaymentOrderRecapFormController extends Controller
     /**
      * Créer un nouveau formulaire récapitulatif pour un ordre de paiement.
      */
-    public function store(Request $request)
+  public function store(Request $request)
     {
         $validated = $request->validate([
             'payment_order_id' => 'required|exists:payment_orders,id',
@@ -57,34 +57,31 @@ class PaymentOrderRecapFormController extends Controller
             'montant' => 'required|numeric|min:0',
             'objet_depense' => 'required|string|max:255',
             'ligne_budgetaire' => 'required|string|max:255',
-            'pieces_jointes.*' => 'file|max:2048', // Taille maximale de 2MB par fichier
+            'pieces_jointes.*' => 'file|max:2048',
+        ]);
+    try {
+        $recapForm = PaymentOrderRecapForm::create([
+            'payment_order_id' => $validated['payment_order_id'],
+            'beneficiaire' => $validated['beneficiaire'],
+            'montant' => $validated['montant'],
+            'objet_depense' => $validated['objet_depense'],
+            'ligne_budgetaire' => $validated['ligne_budgetaire'],
         ]);
 
-        try {
-            $recapForm = PaymentOrderRecapForm::create([
-                'payment_order_id' => $validated['payment_order_id'],
-                'beneficiaire' => $validated['beneficiaire'],
-                'montant' => $validated['montant'],
-                'objet_depense' => $validated['objet_depense'],
-                'ligne_budgetaire' => $validated['ligne_budgetaire'],
-            ]);
-
-            if ($request->hasFile('pieces_jointes')) {
-                foreach ($request->file('pieces_jointes') as $file) {
-                    $filePath = $file->store('attachments', 'public'); // Stocker dans le disque public
-                    $recapForm->attachments()->create([
-                        'file_path' => $filePath,
-                        'file_name' => $file->getClientOriginalName(),
-                    ]);
-                }
-            }
-
+         if ($request->hasFile('pieces_jointes')) {
+            foreach ($request->file('pieces_jointes') as $file) {
+               $filePath = $file->store('attachments', 'public');
+                 $recapForm->attachments()->create([
+                     'file_path' => $filePath,
+                     'file_name' => $file->getClientOriginalName(),
+                 ]);
+             }
+         }
             Log::info("PaymentOrderRecapForm créé : ID " . $recapForm->id);
 
-            // Charger les relations après création
+
             $recapForm->load('attachments');
 
-            // Transformer les données pour utiliser camelCase
             $recapFormTransformed = [
                 'id' => $recapForm->id,
                 'paymentOrderId' => $recapForm->payment_order_id,
@@ -97,7 +94,7 @@ class PaymentOrderRecapFormController extends Controller
                         'id' => $attachment->id,
                         'filePath' => $attachment->file_path,
                         'fileName' => $attachment->file_name,
-                        'url' => $attachment->url, // Assurez-vous que 'url' est défini via l'accessor
+                          'url' => $attachment->url,
                     ];
                 }),
             ];
@@ -106,12 +103,14 @@ class PaymentOrderRecapFormController extends Controller
                 'message' => 'Formulaire récapitulatif créé avec succès',
                 'data' => $recapFormTransformed,
             ], 201);
-        } catch (\Exception $e) {
-            Log::error("Erreur lors de la création du formulaire récapitulatif : " . $e->getMessage());
+    } catch (\Exception $e) {
+        Log::error("Erreur lors de la création du formulaire récapitulatif : " . $e->getMessage());
 
-            return response()->json(['message' => 'Erreur lors de la création du formulaire récapitulatif'], 500);
-        }
+        return response()->json(['message' => 'Erreur lors de la création du formulaire récapitulatif'], 500);
     }
+}
+
+
 
     /**
      * Afficher un formulaire récapitulatif spécifique.
@@ -133,7 +132,7 @@ class PaymentOrderRecapFormController extends Controller
                     'id' => $attachment->id,
                     'filePath' => $attachment->file_path,
                     'fileName' => $attachment->file_name,
-                    'url' => $attachment->url, 
+                      'url' => $attachment->url,
                 ];
             }),
         ];
@@ -148,25 +147,14 @@ class PaymentOrderRecapFormController extends Controller
     {
         $recapForm = PaymentOrderRecapForm::findOrFail($id);
 
-        $validated = $request->validate([
-            'beneficiaire' => 'required|string|max:255',
-            'montant' => 'required|numeric|min:0',
-            'objet_depense' => 'required|string|max:255',
-            'ligne_budgetaire' => 'required|string|max:255',
-            'pieces_jointes.*' => 'file|max:2048', // Taille maximale de 2MB par fichier
-        ]);
+       
 
         try {
-            $recapForm->update([
-                'beneficiaire' => $validated['beneficiaire'],
-                'montant' => $validated['montant'],
-                'objet_depense' => $validated['objet_depense'],
-                'ligne_budgetaire' => $validated['ligne_budgetaire'],
-            ]);
+            $recapForm->update($request->all());
 
-            if ($request->hasFile('pieces_jointes')) {
+             if ($request->hasFile('pieces_jointes')) {
                 // Optionnel : Supprimer les anciennes pièces jointes si nécessaire
-                // $recapForm->attachments()->delete();
+                 //$recapForm->attachments()->delete();
 
                 foreach ($request->file('pieces_jointes') as $file) {
                     $filePath = $file->store('attachments', 'public');
@@ -195,10 +183,11 @@ class PaymentOrderRecapFormController extends Controller
                         'id' => $attachment->id,
                         'filePath' => $attachment->file_path,
                         'fileName' => $attachment->file_name,
-                        'url' => $attachment->url, 
+                         'url' => $attachment->url,
                     ];
                 }),
             ];
+
 
             return response()->json([
                 'message' => 'Formulaire récapitulatif mis à jour avec succès',

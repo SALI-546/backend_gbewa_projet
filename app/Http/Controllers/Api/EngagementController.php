@@ -50,7 +50,7 @@ class EngagementController extends Controller
         $engagement = Engagement::with([
             'project',
             'engagementOperations',
-            'budgetTracking',
+            'budgetTracking.approvals',
             'accountingImputation.entries'
         ])->findOrFail($id);
 
