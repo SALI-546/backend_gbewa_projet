@@ -1,8 +1,10 @@
 // PaymentRequestForm.jsx
+
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { FaTimes } from 'react-icons/fa';
 import axios from 'axios';
+import RecapForm from './RecapForm';
 
 // Composant d'Alerte de Succès
 const SuccessAlert = ({ message, onClose }) => {
@@ -59,19 +61,20 @@ const PaymentRequestForm = ({ onClose, editData }) => {
     const [followedBy, setFollowedBy] = useState(null);
     const [usersOptions, setUsersOptions] = useState([]);
     const [quality, setQuality] = useState('');
-    const [orderNumber, setOrderNumber] = useState(''); // Ajout de l'état pour le numéro d'ordre
+    const [orderNumber, setOrderNumber] = useState('');
+    const [date, setDate] = useState('');
 
     const [recapForms, setRecapForms] = useState([]);
 
     // États pour les alertes
     const [successMessage, setSuccessMessage] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
+
     // Charger les projets depuis l'API
     useEffect(() => {
-        fetch('/api/projects')
-            .then((response) => response.json())
-            .then((data) => {
-                const options = data.map((project) => ({
+        axios.get('/api/projects')
+            .then((response) => {
+                const options = response.data.map(project => ({
                     value: project.id,
                     label: project.name || project.title,
                 }));
@@ -85,10 +88,9 @@ const PaymentRequestForm = ({ onClose, editData }) => {
 
     // Charger les utilisateurs depuis l'API
     useEffect(() => {
-        fetch('/api/users')
-            .then((response) => response.json())
-            .then((data) => {
-                const options = data.map((user) => ({
+        axios.get('/api/users')
+            .then((response) => {
+                const options = response.data.map(user => ({
                     value: user.id,
                     label: user.name,
                 }));
@@ -100,7 +102,6 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             });
     }, []);
 
-
     // Charger les données de modification si disponibles
     useEffect(() => {
         if (editData) {
@@ -108,16 +109,17 @@ const PaymentRequestForm = ({ onClose, editData }) => {
                 value: editData.project.id,
                 label: editData.project.name || editData.project.title,
             });
-            setOrderNumber(editData.orderNumber || ''); // Utiliser camelCase
+            setOrderNumber(editData.orderNumber || '');
             setOperation(editData.operation || '');
             setBeneficiary(editData.beneficiary || '');
             setInvoiceDetails(editData.invoiceDetails || '');
             setBudgetLine(editData.budgetLine || '');
             setFollowedBy({
-                value: editData.followedBy?.id,
-                label: editData.followedBy?.name,
+                value: editData.followedBy?.id || null,
+                label: editData.followedBy?.name || '',
             });
             setQuality(editData.quality || '');
+            setDate(editData.date ? editData.date.split('T')[0] : '');
 
             // Initialiser les formulaires récapitulatifs si disponibles
             if (editData.recapForms && editData.recapForms.length > 0) {
@@ -127,8 +129,8 @@ const PaymentRequestForm = ({ onClose, editData }) => {
                     montantPresenteTotal: form.montantPresenteTotal,
                     montantPresenteEligible: form.montantPresenteEligible,
                     montantSollicite: form.montantSollicite,
-                    attachments: form.attachments || [], // Pièces jointes existantes
-                    newAttachments: [] // Pièces jointes nouvelles
+                    payment_request_id: editData.id, // Assurez-vous d'avoir cet ID
+                    existingAttachments: form.attachments || [], // Pièces jointes existantes pour affichage
                 })));
             } else {
                 setRecapForms([{
@@ -137,8 +139,8 @@ const PaymentRequestForm = ({ onClose, editData }) => {
                     montantPresenteTotal: '',
                     montantPresenteEligible: '',
                     montantSollicite: '',
-                    attachments: [],
-                    newAttachments: []
+                    payment_request_id: editData ? editData.id : null,
+                    existingAttachments: [],
                 }]);
             }
         } else {
@@ -151,14 +153,15 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             setBudgetLine('');
             setFollowedBy(null);
             setQuality('');
+            setDate('');
             setRecapForms([{
                 id: null,
                 activite: '',
                 montantPresenteTotal: '',
                 montantPresenteEligible: '',
                 montantSollicite: '',
-                attachments: [],
-                newAttachments: []
+                payment_request_id: null, // À mettre à jour après la création de la demande de paiement
+                existingAttachments: [],
             }]);
         }
     }, [editData]);
@@ -171,48 +174,33 @@ const PaymentRequestForm = ({ onClose, editData }) => {
             montantPresenteTotal: '',
             montantPresenteEligible: '',
             montantSollicite: '',
-            attachments: [],
-            newAttachments: []
+            payment_request_id: editData ? editData.id : null,
+            existingAttachments: [],
         }]);
     };
 
+    // Fonction pour mettre à jour un formulaire récapitulatif
+    const handleUpdateRecapForm = (index, updatedForm) => {
+        const updatedForms = [...recapForms];
+        updatedForms[index] = updatedForm;
+        setRecapForms(updatedForms);
+    };
+
     // Fonction pour supprimer un formulaire récapitulatif
-    const handleRemoveRecapForm = (index) => {
-        const updatedForms = [...recapForms];
-        updatedForms.splice(index, 1);
-        setRecapForms(updatedForms);
-    };
-
-    // Fonction pour gérer les changements dans les formulaires récapitulatifs
-    const handleRecapFormChange = (index, field, value) => {
-        const updatedForms = [...recapForms];
-        updatedForms[index][field] = value;
-        setRecapForms(updatedForms);
-    };
-
-    // Fonction pour gérer les changements dans les fichiers
-    const handleFileChange = (index, files) => {
-        const allowedTypes = [
-            'application/pdf',
-            'image/jpeg',
-            'image/jpg',
-            'image/png',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        ];
-        const updatedForms = [...recapForms];
-        const validFiles = [];
-
-        for (let i = 0; i < files.length; i++) {
-            if (allowedTypes.includes(files[i].type)) {
-                validFiles.push(files[i]);
-            } else {
-                alert(`Le fichier ${files[i].name} n'est pas un type autorisé.`);
+    const handleDeleteRecapForm = async (index, formId) => {
+        if (formId) {
+            try {
+                await axios.delete(`/api/recap-forms/${formId}`);
+                console.log(`Formulaire récapitulatif supprimé : ID ${formId}`);
+            } catch (error) {
+                console.error('Erreur lors de la suppression du formulaire récapitulatif:', error);
+                setErrorMessage('Erreur lors de la suppression du formulaire récapitulatif.');
+                return; // Arrêter si la suppression a échoué
             }
         }
-
-        // Ajouter les fichiers valides aux nouvelles pièces jointes
-        updatedForms[index].newAttachments = [...updatedForms[index].newAttachments, ...validFiles];
+        // Supprimer localement
+        const updatedForms = [...recapForms];
+        updatedForms.splice(index, 1);
         setRecapForms(updatedForms);
     };
 
@@ -225,107 +213,99 @@ const PaymentRequestForm = ({ onClose, editData }) => {
         setErrorMessage(null);
     };
 
-    // Fonction pour gérer la soumission du formulaire
-    const handleSubmit = async (e) => {
+    // Fonction pour gérer la soumission du formulaire principal
+    const handleSubmitMainForm = async (e) => {
         e.preventDefault();
 
+        // Vérifications préliminaires
         if (!selectedProject) {
-            alert('Veuillez sélectionner un projet.');
+            setErrorMessage('Veuillez sélectionner un projet.');
             return;
         }
-
         if (!orderNumber) {
-            alert('Veuillez saisir un numéro d\'ordre.');
+            setErrorMessage('Veuillez saisir un numéro d\'ordre.');
             return;
         }
-
-        // Valider que tous les formulaires récapitulatifs sont remplis
-        for (let i = 0; i < recapForms.length; i++) {
-            const form = recapForms[i];
-            if (
-                !form.activite ||
-                form.montantPresenteTotal === '' ||
-                form.montantPresenteEligible === '' ||
-                form.montantSollicite === ''
-            ) {
-                alert(`Veuillez remplir tous les champs du formulaire récapitulatif ${i + 1}.`);
-                return;
-            }
+        if (!operation) {
+            setErrorMessage('Veuillez saisir une opération.');
+            return;
+        }
+        if (!beneficiary) {
+            setErrorMessage('Veuillez saisir un bénéficiaire.');
+            return;
+        }
+        if (!invoiceDetails) {
+            setErrorMessage('Veuillez saisir les détails de la facture.');
+            return;
+        }
+        if (!budgetLine) {
+            setErrorMessage('Veuillez saisir la ligne budgétaire.');
+            return;
         }
 
         try {
-            // Préparer les données
-            const formData = new FormData();
-            formData.append('project_id', selectedProject.value);
-            formData.append('order_number', orderNumber); // Inclusion du numéro d'ordre
-            formData.append('operation', operation);
-            formData.append('beneficiary', beneficiary);
-            formData.append('invoice_details', invoiceDetails);
-            formData.append('budget_line', budgetLine);
-            if (followedBy) formData.append('followed_by_id', followedBy.value);
-            formData.append('quality', quality);
+            const mainFormData = {
+                project_id: selectedProject.value,
+                order_number: orderNumber,
+                operation: operation,
+                beneficiary: beneficiary,
+                invoice_details: invoiceDetails,
+                budget_line: budgetLine,
+                followed_by_id: followedBy ? followedBy.value : null,
+                quality: quality,
+                date: date,
+            };
 
-            recapForms.forEach((form, index) => {
-                if (form.id) {
-                    formData.append(`recap_forms[${index}][id]`, form.id);
-                }
-                formData.append(`recap_forms[${index}][activite]`, form.activite);
-                formData.append(`recap_forms[${index}][montant_presente_total]`, form.montantPresenteTotal);
-                formData.append(`recap_forms[${index}][montant_presente_eligible]`, form.montantPresenteEligible);
-                formData.append(`recap_forms[${index}][montant_sollicite]`, form.montantSollicite);
+            // Debug : log des données principales
+            console.log('Submitting to URL:', editData ? `/api/payment-requests/${editData.id}` : '/api/payment-requests');
+            console.log('Method:', editData ? 'PATCH' : 'POST');
+            console.log('Main Form Data:', mainFormData);
 
-                // Ajouter uniquement les nouvelles pièces jointes
-                form.newAttachments.forEach((file) => {
-                    formData.append(`recap_forms[${index}][attachments][]`, file);
-                });
-            });
-
-            // Déterminer la méthode et l'URL en fonction du mode (création ou modification)
             const method = editData ? 'patch' : 'post';
             const url = editData ? `/api/payment-requests/${editData.id}` : '/api/payment-requests';
-
-            console.log('Méthode:', method);
-            console.log('URL:', url);
-
-            console.log('Données envoyées:', Array.from(formData.entries())); // Log pour débogage
 
             const response = await axios({
                 method: method,
                 url: url,
-                data: formData,
+                data: mainFormData, // Envoi en JSON
                 headers: {
                     'Accept': 'application/json',
-                    // 'Content-Type': 'multipart/form-data', // Retirer ce header pour laisser Axios le gérer
+                    'Content-Type': 'application/json',
                 },
             });
 
+            // Si vous créez une nouvelle demande de paiement, vous aurez besoin de l'ID pour les formulaires récapitulatifs
+            const paymentRequestId = editData ? editData.id : response.data.data.id;
+
             setSuccessMessage(editData ? 'Demande de paiement mise à jour avec succès.' : 'Demande de paiement créée avec succès.');
-            onClose();
+
+            // Mettez à jour les formulaires récapitulatifs avec le nouvel ID de demande de paiement si nécessaire
+            if (!editData) {
+                const updatedRecapForms = recapForms.map(form => ({
+                    ...form,
+                    payment_request_id: paymentRequestId,
+                }));
+                setRecapForms(updatedRecapForms);
+            }
+
         } catch (error) {
-            console.error('Erreur lors de la soumission du formulaire:', error);
-            if (editData) {
-                // Gestion des erreurs lors de la mise à jour
-                if (error.response && error.response.data && error.response.data.errors) {
+            console.error('Erreur lors de la soumission du formulaire principal:', error);
+            if (error.response) {
+                if (error.response.status === 422 && error.response.data.errors) {
                     const errorMessages = Object.values(error.response.data.errors).flat().join('\n');
-                    setErrorMessage('Erreur lors de la mise à jour de la demande de paiement:\n' + errorMessages);
+                    setErrorMessage('Erreur de validation:\n' + errorMessages);
                 } else {
                     setErrorMessage('Erreur lors de la mise à jour de la demande de paiement: ' + error.message);
                 }
             } else {
-                // Gestion des erreurs lors de la création
-                if (error.response && error.response.data && error.response.data.errors) {
-                    const errorMessages = Object.values(error.response.data.errors).flat().join('\n');
-                    setErrorMessage('Erreur lors de la soumission du formulaire:\n' + errorMessages);
-                } else {
-                    setErrorMessage('Erreur lors de la soumission du formulaire: ' + error.message);
-                }
+                setErrorMessage('Erreur lors de la soumission du formulaire: ' + error.message);
             }
         }
     };
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-lg max-h-[80vh] overflow-y-auto">
+            <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-3">
                     <h2 className="text-xl font-bold">
                         {editData ? 'Modifier Demande de Paiement' : 'Ajouter Demande de Paiement'}
@@ -336,8 +316,9 @@ const PaymentRequestForm = ({ onClose, editData }) => {
                 </div>
                 {successMessage && <SuccessAlert message={successMessage} onClose={closeSuccessAlert} />}
                 {errorMessage && <ErrorAlert message={errorMessage} onClose={closeErrorAlert} />}
-                <form onSubmit={handleSubmit}>
-                    {/* Formulaire principal */}
+
+                {/* Formulaire Principal */}
+                <form onSubmit={handleSubmitMainForm}>
                     <div className="mb-3">
                         <label className="block text-gray-700 font-medium mb-1">Nom du projet</label>
                         <Select
@@ -425,127 +406,18 @@ const PaymentRequestForm = ({ onClose, editData }) => {
                             placeholder="Entrez la qualité"
                         />
                     </div>
-
-                    {/* Formulaires récapitulatifs */}
                     <div className="mb-3">
-                        <h3 className="text-lg font-semibold mb-2">Formulaires Récapitulatifs</h3>
-                        {recapForms.map((form, index) => (
-                            <div key={index} className="border border-gray-300 p-3 rounded mb-3 relative">
-                                {recapForms.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveRecapForm(index)}
-                                        className="absolute top-1 right-1 text-red-500 hover:text-red-700"
-                                    >
-                                        <FaTimes />
-                                    </button>
-                                )}
-                                <h4 className="text-md font-medium mb-1">Formulaire {index + 1}</h4>
-                                <div className="mb-2">
-                                    <label className="block text-gray-700 font-medium mb-0.5">Activité</label>
-                                    <input
-                                        type="text"
-                                        value={form.activite}
-                                        onChange={(e) => handleRecapFormChange(index, 'activite', e.target.value)}
-                                        className="w-full border border-gray-300 rounded px-3 py-1.5"
-                                        placeholder="Description de l'activité"
-                                        required
-                                    />
-                                </div>
-                                <div className="mb-2">
-                                    <label className="block text-gray-700 font-medium mb-0.5">Montant présenté (en coût total)</label>
-                                    <input
-                                        type="number"
-                                        value={form.montantPresenteTotal}
-                                        onChange={(e) => handleRecapFormChange(index, 'montantPresenteTotal', e.target.value)}
-                                        className="w-full border border-gray-300 rounded px-3 py-1.5"
-                                        placeholder="Montant total"
-                                        required
-                                    />
-                                </div>
-                                <div className="mb-2">
-                                    <label className="block text-gray-700 font-medium mb-0.5">Montant présenté (en coût total éligible)</label>
-                                    <input
-                                        type="number"
-                                        value={form.montantPresenteEligible}
-                                        onChange={(e) => handleRecapFormChange(index, 'montantPresenteEligible', e.target.value)}
-                                        className="w-full border border-gray-300 rounded px-3 py-1.5"
-                                        placeholder="Montant éligible"
-                                        required
-                                    />
-                                </div>
-                                <div className="mb-2">
-                                    <label className="block text-gray-700 font-medium mb-0.5">Montant sollicité (A-B)</label>
-                                    <input
-                                        type="number"
-                                        value={form.montantSollicite}
-                                        onChange={(e) => handleRecapFormChange(index, 'montantSollicite', e.target.value)}
-                                        className="w-full border border-gray-300 rounded px-3 py-1.5"
-                                        placeholder="Montant sollicité"
-                                        required
-                                    />
-                                </div>
-                                <div className="mb-2">
-                                    <label className="block text-gray-700 font-medium mb-0.5">Pièces jointes</label>
-                                    
-                                    {/* Afficher les pièces jointes existantes */}
-                                    {form.attachments.length > 0 && (
-                                        <ul className="mt-1 list-disc list-inside">
-                                            {form.attachments.map((file, idx) => (
-                                                <li key={idx}>
-                                                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                                                        {file.fileName} {/* Utiliser camelCase */}
-                                                    </a>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-
-                                    <input
-                                        type="file"
-                                        multiple
-                                        accept=".pdf, .jpg, .jpeg, .png, .doc, .docx"
-                                        onChange={(e) => handleFileChange(index, e.target.files)}
-                                        className="w-full border border-gray-300 rounded px-3 py-1.5 mt-1"
-                                    />
-                                    
-                                    {/* Afficher les nouvelles pièces jointes */}
-                                    {form.newAttachments.length > 0 && (
-                                        <ul className="mt-1 list-disc list-inside">
-                                            {form.newAttachments.map((file, idx) => (
-                                                <li key={idx}>
-                                                    {file instanceof File ? (
-                                                        file.name
-                                                    ) : (
-                                                        <a href={file.url} target="_blank" rel="noopener noreferrer">
-                                                            {file.fileName}
-                                                        </a>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                        <button
-                            type="button"
-                            onClick={handleAddRecapForm}
-                            className="bg-blue-500 hover:bg-blue-600 text-white py-1.5 px-3 rounded"
-                        >
-                            Ajouter un formulaire récapitulatif
-                        </button>
+                        <label className="block text-gray-700 font-medium mb-1">Date</label>
+                        <input
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="w-full border border-gray-300 rounded px-3 py-2"
+                            placeholder="Date"
+                        />
                     </div>
 
-                    {/* Boutons de soumission */}
-                    <div className="flex justify-between mt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="bg-red-500 hover:bg-red-600 text-white py-1.5 px-3 rounded"
-                        >
-                            Annuler
-                        </button>
+                    <div className="flex justify-end">
                         <button
                             type="submit"
                             className="bg-green-500 hover:bg-green-600 text-white py-1.5 px-3 rounded"
@@ -554,6 +426,27 @@ const PaymentRequestForm = ({ onClose, editData }) => {
                         </button>
                     </div>
                 </form>
+
+                {/* Gestion des Formulaires Récapitulatifs */}
+                <div className="mt-6">
+                    <h3 className="text-lg font-semibold mb-2">Formulaires Récapitulatifs</h3>
+                    {recapForms.map((form, index) => (
+                        <RecapForm
+                            key={form.id || index}
+                            form={form}
+                            index={index}
+                            onUpdate={handleUpdateRecapForm}
+                            onDelete={(formId) => handleDeleteRecapForm(index, formId)}
+                        />
+                    ))}
+                    <button
+                        type="button"
+                        onClick={handleAddRecapForm}
+                        className="bg-blue-500 hover:bg-blue-600 text-white py-1.5 px-3 rounded mt-2"
+                    >
+                        Ajouter un formulaire récapitulatif
+                    </button>
+                </div>
             </div>
         </div>
     );

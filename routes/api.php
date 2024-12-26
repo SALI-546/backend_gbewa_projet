@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\PaymentOrderRecapFormController;
 use App\Http\Controllers\Api\SignatureController;
 use App\Http\Controllers\Api\BudgetTrackingApprovalController;
 
+
+
 Route::middleware('auth:sanctum')->group(function () {
     // Routes protégées par l'authentification si nécessaire
 });
@@ -48,6 +50,13 @@ Route::post('/engagements/{engagementId}/accounting-imputation', [AccountingImpu
 Route::put('/accounting-imputations/{id}', [AccountingImputationController::class, 'update']);// Ajout de la route PUT
 
 Route::apiResource('payment-requests', PaymentRequestController::class);
+
+// Routes pour les formulaires récapitulatifs
+Route::apiResource('recap-forms', RecapFormController::class)->except(['index', 'show']);
+
+
+
+
 
 // Routes pour les ordres de paiement
 Route::apiResource('payment-orders', PaymentOrderController::class);
